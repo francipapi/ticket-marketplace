@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Use PostgreSQL for production
+  provider = "postgresql" 
+  url = env("DATABASE_URL")
+  // Local SQLite for development:
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
+}
+
+model User {
+  id              String   @id @default(cuid()) // cuid works in both SQLite & PostgreSQL
+  email           String   @unique
+  username        String   @unique
+  passwordHash    String   // Will be migrated to Supabase differently
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Migration metadata
+  migrationId     String?  // Supabase user ID after migration
+  migrationStatus String   @default("pending") // pending, migrated, failed
+  
+  listings        Listing[]
+  sentOffers      Offer[]   @relation("BuyerOffers")
+  
+  @@map("users") // Explicit table name for migration
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  eventName   String
+  eventDate   DateTime
+  venue       String?
+  priceInCents Int     // Cents from day one - no migration needed
+  quantity    Int
+  description String?
+  
+  // File handling - migration ready
+  ticketPath      String?    // local: uploads/123/file.pdf -> supabase: tickets/uuid/file.pdf
+  originalFileName String?
+  fileType        String?
+  fileSize        Int?
+  
+  status      String   @default("active") // Will become enum in Phase 1
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Migration metadata
+  migrationId String?  // Supabase listing ID after migration
+  
+  offers      Offer[]
+  
+  @@map("listings")
+  @@index([userId])
+  @@index([status])
+  @@index([eventDate])
+}
+
+model Offer {
+  id           String   @id @default(cuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId      String
+  buyer        User     @relation("BuyerOffers", fields: [buyerId], references: [id], onDelete: Cascade)
+  
+  offerPriceInCents Int // Cents from start
+  quantity     Int
+  messageTemplate String // 'asking_price', 'make_offer', 'check_availability'
+  customMessage String? // For 'make_offer' type
+  
+  status       String   @default("pending") // pending, accepted, rejected, expired
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Mock transaction data - will become separate Transaction model in Phase 1
+  isPaid       Boolean  @default(false)
+  paidAt       DateTime?
+  
+  // Migration metadata  
+  migrationId  String?
+  
+  @@map("offers")
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([status])
+}
+
+// Migration tracking
+model MigrationLog {
+  id        String   @id @default(cuid())
+  tableName String
+  recordId  String
+  status    String   // pending, migrated, failed
+  error     String?
+  createdAt DateTime @default(now())
+  
+  @@map("migration_logs")
+}

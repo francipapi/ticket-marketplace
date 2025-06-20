@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-06-20T13:32:50.003Z",
+  "results": [
+    {
+      "table": "users",
+      "sqliteCount": 2,
+      "status": "pending"
+    },
+    {
+      "table": "listings",
+      "sqliteCount": 2,
+      "status": "pending"
+    },
+    {
+      "table": "offers",
+      "sqliteCount": 2,
+      "status": "pending"
+    }
+  ],
+  "summary": {
+    "totalTables": 3,
+    "verified": 0,
+    "pending": 3,
+    "mismatched": 0
+  }
+}
