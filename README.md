@@ -1,200 +1,169 @@
-# Ticket Marketplace - Phase 0 Prototype
+# 🎫 Ticket Marketplace
 
-A secure peer-to-peer marketplace for buying and selling digital event tickets with fraud prevention and automated delivery.
+A secure, full-featured ticket marketplace built with Next.js 14. This is a Phase 0 prototype designed for easy migration to production-ready infrastructure.
 
-## 🚀 Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Set up database
-npm run db:push
-npm run db:seed
-
-# Start development server
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000)
-
-## 📋 Demo Accounts
-
-- **Alice**: alice@example.com (password: password123)
-- **Bob**: bob@example.com (password: password123)
+![Next.js](https://img.shields.io/badge/Next.js-15.3.4-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)
 
 ## ✨ Features
 
+### Core Functionality
+- 🔐 **Secure Authentication** - JWT-based auth with password hashing
+- 🎟️ **Ticket Listings** - Create, edit, delete ticket listings
+- 💬 **Offer System** - Make offers, negotiate prices, accept/reject
+- 💳 **Payment Processing** - Mock payment system (ready for Stripe integration)
+- 📱 **Responsive Design** - Mobile-first, works on all devices
+- 📂 **File Upload** - Secure ticket file uploads with watermarking
+- 🏠 **User Dashboard** - Manage your listings and offers
+
+### Technical Features
+- ⚡ **Next.js 14** with App Router and Server Components
+- 🗃️ **SQLite/PostgreSQL** database with Prisma ORM
+- 🎨 **Tailwind CSS** for responsive styling
+- 🔒 **Input validation** with Zod schemas
+- 📸 **File handling** with local storage (migration-ready)
+- 🔄 **Real-time updates** for offers and payments
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/ticket-marketplace.git
+cd ticket-marketplace
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+
+# Set up the database
+npx prisma generate
+npx prisma db push
+
+# Seed the database (optional)
+npx prisma db seed
+
+# Start the development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 📱 Testing
+
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instructions.
+
+### Quick Test
+1. Register a new account
+2. Create a ticket listing
+3. Make an offer (from another account)
+4. Accept the offer and complete payment
+5. Download tickets
+
+## 🏗️ Architecture
+
 ### Phase 0 (Current)
-- ✅ User registration and authentication (JWT)
-- ✅ Ticket listing creation and management
-- ✅ Structured offer system (no free text)
-- ✅ File upload with watermarking
-- ✅ Mock payment processing
-- ✅ User dashboard
-- ✅ Responsive design
-- ✅ SQLite database for simplicity
+- **Frontend**: Next.js 14 with TypeScript
+- **Database**: SQLite (local) / PostgreSQL (production)
+- **Auth**: JWT with bcrypt
+- **Storage**: Local file system
+- **Payments**: Mock system
 
-### Phase 1 (Next)
-- 🔄 Supabase integration (PostgreSQL + Auth + Storage)
-- 🔄 Real-time notifications
-- 🔄 Enhanced security with RLS policies
-- 🔄 Stripe Connect payments
-- 🔄 Email notifications
-
-## 🛠 Technology Stack
-
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Database**: SQLite (Phase 0) → PostgreSQL (Phase 1)
-- **ORM**: Prisma
-- **Authentication**: JWT (Phase 0) → Supabase Auth (Phase 1)
-- **File Storage**: Local (Phase 0) → Supabase Storage (Phase 1)
-- **Validation**: Zod
-- **UI Components**: Lucide React icons
-- **Notifications**: React Hot Toast
+### Phase 1 (Migration Ready)
+- **Backend**: Supabase (PostgreSQL + Auth)
+- **Storage**: Supabase Storage
+- **Payments**: Stripe integration
+- **Deployment**: Vercel
 
 ## 📁 Project Structure
 
 ```
 ticket-marketplace/
-├── app/                    # Next.js 14 App Router
+├── app/                    # Next.js App Router
 │   ├── api/               # API routes
 │   ├── auth/              # Authentication pages
-│   ├── listings/          # Listing pages
 │   ├── dashboard/         # User dashboard
-│   └── providers.tsx      # Context providers
-├── components/            # Reusable UI components
-├── lib/                   # Utilities and services
-│   ├── auth.ts           # Authentication service
-│   ├── db.ts             # Database client
-│   ├── upload.ts         # File upload service
-│   └── validations.ts    # Zod schemas
-├── migration/            # Phase 0 → 1 migration tools
-├── prisma/               # Database schema and seeds
-└── public/uploads/       # Local file storage
+│   ├── listings/          # Ticket listings
+│   └── offers/            # Offer management
+├── components/            # Reusable components
+├── lib/                   # Utilities and configurations
+├── prisma/               # Database schema and migrations
+├── migration/            # Phase 1 migration tools
+└── docs/                 # Documentation
 ```
 
-## 🔧 Available Scripts
+## 🔐 Environment Variables
 
 ```bash
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run start           # Start production server
-npm run db:push         # Push schema to database
-npm run db:seed         # Seed with test data
-npm run db:reset        # Reset database and reseed
-npm run db:studio       # Open Prisma Studio
-npm run migration:export # Export data for Phase 1
-npm run migration:verify # Verify migration integrity
-npm run type-check      # TypeScript type checking
-npm run clean           # Clean build artifacts
-npm run fresh           # Fresh install and setup
+# Required
+JWT_SECRET=your-super-secret-key
+DATABASE_URL=your-database-url
+NEXTAUTH_URL=http://localhost:3000
+
+# Optional
+MOCK_PAYMENTS=true
+PLATFORM_FEE_PERCENT=6
+MAX_FILE_SIZE=10485760
 ```
-
-## 🔒 Security Features
-
-- JWT authentication with httpOnly cookies
-- Password hashing with bcrypt (12 rounds)
-- File type and size validation
-- Structured offer templates (no XSS)
-- Input validation with Zod schemas
-- SQL injection protection with Prisma
-
-## 📊 Database Schema
-
-### Users
-- Email, username, password hash
-- Migration metadata for Phase 1 transition
-
-### Listings
-- Event details, pricing (in cents), quantity
-- File paths for ticket uploads
-- Status tracking (active, sold, inactive)
-
-### Offers
-- Structured message templates only
-- Price negotiation without free text
-- Status tracking (pending, accepted, rejected)
-
-## 🎯 User Flows
-
-### Selling Tickets
-1. Register/Login → Dashboard
-2. Create Listing → Upload ticket files
-3. Receive offers → Accept/reject offers
-4. Automatic delivery after payment
-
-### Buying Tickets
-1. Browse listings → Find desired tickets
-2. Make structured offer → Wait for acceptance
-3. Complete mock payment → Download tickets
-
-## 🔄 Migration to Phase 1
-
-When ready for production:
-
-```bash
-# Export Phase 0 data
-npm run migration:export
-
-# Set up Supabase project
-# Update environment variables
-# Import data to Supabase
-npm run migration:import
-
-# Verify migration
-npm run migration:verify
-```
-
-See [docs/MIGRATION.md](docs/MIGRATION.md) for detailed instructions.
-
-## 🚦 Development Workflow
-
-1. **Phase 0**: Validate concept with minimal infrastructure
-2. **Phase 1**: Migrate to production services (Supabase)
-3. **Phase 2**: Add real payments (Stripe Connect)
-4. **Phase 3**: Scale with advanced features
-
-## 📈 Performance Considerations
-
-- Database queries optimized with indexes
-- File uploads with size/type validation
-- Efficient API design with pagination
-- Image watermarking for fraud prevention
-- Responsive design for mobile
-
-## 🔍 Testing
-
-Manual testing checklist:
-
-- [ ] User registration and login
-- [ ] Listing creation with file upload
-- [ ] Making and responding to offers
-- [ ] Mock payment flow
-- [ ] Dashboard functionality
-- [ ] Mobile responsiveness
 
 ## 🚀 Deployment
 
-Phase 0 can be deployed to:
-- Vercel (recommended)
-- Netlify
-- Railway
-- Any Node.js hosting
+### Vercel (Recommended)
 
-## 📄 License
+1. Push to GitHub
+2. Connect to Vercel
+3. Set environment variables
+4. Deploy!
 
-This project is created for educational and demonstration purposes.
+The app is migration-ready for PostgreSQL databases.
+
+## 🔄 Migration Path
+
+This Phase 0 prototype is designed for easy migration to production:
+
+1. **Database**: SQLite → PostgreSQL (schema compatible)
+2. **Auth**: JWT → Supabase Auth
+3. **Storage**: Local → Supabase Storage
+4. **Payments**: Mock → Stripe
+
+See [docs/MIGRATION.md](./docs/MIGRATION.md) for detailed migration guide.
+
+## 🛠️ Built With
+
+- [Next.js 14](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Prisma](https://www.prisma.io/) - Database ORM
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Lucide React](https://lucide.dev/) - Icons
+- [React Hook Form](https://react-hook-form.com/) - Form handling
+- [React Hot Toast](https://react-hot-toast.com/) - Notifications
+
+## 📝 License
+
+This project is open source and available under the [MIT License](LICENSE).
 
 ## 🤝 Contributing
 
-This is a prototype implementation. For production use:
-1. Complete Phase 1 migration
-2. Add comprehensive testing
-3. Implement proper monitoring
-4. Add legal compliance features
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📞 Support
+
+For questions or issues, please open a GitHub issue or contact the development team.
 
 ---
 
-**Note**: This is Phase 0 - a working prototype for concept validation. For production use, migrate to Phase 1 with proper infrastructure and security measures.
+**Built with ❤️ using Claude Code**

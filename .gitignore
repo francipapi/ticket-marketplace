@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
 
 # vercel
 .vercel
@@ -40,4 +41,38 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Generated files
 /app/generated/prisma
+
+# Database
+/prisma/dev.db*
+/prisma/migrations/
+
+# Uploads (local development)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# Logs
+logs
+*.log
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
