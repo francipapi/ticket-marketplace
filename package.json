@@ -12,6 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && npm run db:seed",
     "db:studio": "prisma studio",
+    "db:deploy": "prisma generate --schema=prisma/schema.production.prisma && prisma db push --schema=prisma/schema.production.prisma",
     "migration:export": "tsx migration/export-data.ts",
     "migration:verify": "tsx migration/verify-migration.ts",
     "type-check": "tsc --noEmit",

@@ -1,16 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Production schema for PostgreSQL deployment
+// This file should be used when deploying to Vercel/production
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-  // Ready for PostgreSQL migration:
-  // provider = "postgresql" 
-  // url = env("DATABASE_URL")
+  provider = "postgresql" 
+  url = env("DATABASE_URL")
 }
 
 model User {
