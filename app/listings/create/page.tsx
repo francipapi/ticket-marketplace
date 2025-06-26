@@ -48,7 +48,7 @@ export default function CreateListingPage() {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/api/upload/supabase', {
           method: 'POST',
           body: formData,
         });
@@ -129,7 +129,7 @@ export default function CreateListingPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/listings', {
+      const response = await fetch('/api/listings/supabase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,7 +137,7 @@ export default function CreateListingPage() {
           eventName: formData.eventName.trim(),
           eventDate: new Date(formData.eventDate).toISOString(),
           venue: formData.venue.trim() || undefined,
-          price: Math.round(price * 100), // Convert to cents
+          priceInCents: Math.round(price * 100), // Convert to cents
           quantity,
           description: formData.description.trim() || undefined,
         }),
@@ -145,9 +145,10 @@ export default function CreateListingPage() {
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok && (result.success || result.listing)) {
         toast.success('Listing created successfully!');
-        router.push(`/listings/${result.data.id}`);
+        const listing = result.success ? result.data.listing : result.listing;
+        router.push(`/listings/${listing.id}`);
       } else {
         toast.error(result.error || 'Failed to create listing');
       }

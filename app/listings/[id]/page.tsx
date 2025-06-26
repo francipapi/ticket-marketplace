@@ -56,11 +56,13 @@ export default function ListingDetailsPage() {
 
   const fetchListing = async () => {
     try {
-      const response = await fetch(`/api/listings/${params.id}`);
+      const response = await fetch(`/api/listings/supabase/${params.id}`);
       const result = await response.json();
 
-      if (result.success) {
-        setListing(result.data);
+      // Handle both old and new response formats
+      const listing = result.success ? result.data.listing : result.listing;
+      if (listing) {
+        setListing(listing);
       } else {
         toast.error('Listing not found');
         router.push('/listings');
@@ -323,12 +325,12 @@ function OfferModal({
         offerPrice = Math.round(priceInDollars * 100);
       }
 
-      const response = await fetch('/api/offers', {
+      const response = await fetch('/api/offers/supabase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           listingId: listing.id,
-          offerPrice,
+          offerPriceInCents: offerPrice,
           quantity,
           messageTemplate,
           customMessage: messageTemplate === 'make_offer' ? customMessage : undefined,
@@ -337,7 +339,7 @@ function OfferModal({
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok && (result.success || result.offer)) {
         toast.success('Offer sent successfully!');
         onSuccess();
       } else {

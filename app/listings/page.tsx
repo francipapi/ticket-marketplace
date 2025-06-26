@@ -16,9 +16,10 @@ interface Listing {
   user: {
     username: string;
   };
-  _count: {
+  _count?: {
     offers: number;
   };
+  offers?: any[];
 }
 
 export default function ListingsPage() {
@@ -35,11 +36,13 @@ export default function ListingsPage() {
         ...(search && { search }),
       });
 
-      const response = await fetch(`/api/listings?${params}`);
+      const response = await fetch(`/api/listings/supabase?${params}`);
       const result = await response.json();
 
-      if (result.success) {
-        setListings(result.data.listings);
+      // Handle both old and new response formats
+      const listings = result.success ? result.data.listings : result.listings;
+      if (listings) {
+        setListings(listings);
       }
     } catch (error) {
       console.error('Error fetching listings:', error);
@@ -162,9 +165,9 @@ export default function ListingsPage() {
                       {formatPrice(listing.priceInCents)}
                     </span>
                   </div>
-                  {listing._count.offers > 0 && (
+                  {((listing._count?.offers || listing.offers?.length || 0) > 0) && (
                     <span className="text-sm text-gray-500">
-                      {listing._count.offers} offer{listing._count.offers !== 1 ? 's' : ''}
+                      {listing._count?.offers || listing.offers?.length || 0} offer{(listing._count?.offers || listing.offers?.length || 0) !== 1 ? 's' : ''}
                     </span>
                   )}
                 </div>

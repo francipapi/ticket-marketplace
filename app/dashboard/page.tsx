@@ -47,15 +47,24 @@ export default function DashboardPage() {
   const [receivedOffers, setReceivedOffers] = useState<Offer[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  // Redirect to login if not authenticated (after loading completes)
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, loading, router]);
+
   const fetchDashboardData = useCallback(async () => {
     try {
       // Fetch user's listings
-      const listingsResponse = await fetch('/api/listings');
+      const listingsResponse = await fetch('/api/listings/supabase');
       if (listingsResponse.ok) {
         const listingsResult = await listingsResponse.json();
-        if (listingsResult.success) {
+        // Handle both old and new response formats
+        const listings = listingsResult.success ? listingsResult.data.listings : listingsResult.listings;
+        if (listings) {
           // Filter for user's listings
-          const userListings = listingsResult.data.listings.filter(
+          const userListings = listings.filter(
             (listing: { user: { id: string } }) => listing.user.id === user?.id
           );
           setUserListings(userListings);
@@ -63,20 +72,24 @@ export default function DashboardPage() {
       }
 
       // Fetch sent offers
-      const sentOffersResponse = await fetch('/api/offers?type=sent');
+      const sentOffersResponse = await fetch('/api/offers/supabase?type=sent');
       if (sentOffersResponse.ok) {
         const sentOffersResult = await sentOffersResponse.json();
-        if (sentOffersResult.success) {
-          setSentOffers(sentOffersResult.data);
+        // Handle both old and new response formats
+        const sentOffers = sentOffersResult.success ? sentOffersResult.data.offers : sentOffersResult.offers;
+        if (sentOffers) {
+          setSentOffers(sentOffers);
         }
       }
 
       // Fetch received offers
-      const receivedOffersResponse = await fetch('/api/offers?type=received');
+      const receivedOffersResponse = await fetch('/api/offers/supabase?type=received');
       if (receivedOffersResponse.ok) {
         const receivedOffersResult = await receivedOffersResponse.json();
-        if (receivedOffersResult.success) {
-          setReceivedOffers(receivedOffersResult.data);
+        // Handle both old and new response formats
+        const receivedOffers = receivedOffersResult.success ? receivedOffersResult.data.offers : receivedOffersResult.offers;
+        if (receivedOffers) {
+          setReceivedOffers(receivedOffers);
         }
       }
     } catch (error) {
@@ -345,15 +358,15 @@ function OfferCard({
     setResponding(true);
     
     try {
-      const res = await fetch(`/api/offers/${offer.id}/respond`, {
-        method: 'POST',
+      const res = await fetch(`/api/offers/supabase/${offer.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ response }),
+        body: JSON.stringify({ action: response }),
       });
 
       const result = await res.json();
 
-      if (result.success) {
+      if (result.offer) {
         toast.success(`Offer ${response}ed successfully!`);
         onUpdate();
       } else {
@@ -371,15 +384,15 @@ function OfferCard({
     setPaying(true);
     
     try {
-      const res = await fetch('/api/payments/mock-pay', {
-        method: 'POST',
+      const res = await fetch(`/api/offers/supabase/${offer.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId: offer.id }),
+        body: JSON.stringify({ action: 'pay' }),
       });
 
       const result = await res.json();
 
-      if (result.success) {
+      if (result.offer) {
         toast.success('Payment successful! You can now download your tickets.');
         onUpdate();
       } else {
@@ -463,7 +476,7 @@ function OfferCard({
           
           {type === 'sent' && offer.status === 'completed' && offer.isPaid && (
             <a
-              href={`/api/offers/${offer.id}/download`}
+              href={`/api/offers/supabase/${offer.id}/download`}
               download
               className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
             >

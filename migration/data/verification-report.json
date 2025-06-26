@@ -1,19 +1,19 @@
 {
-  "timestamp": "2025-06-20T13:32:50.003Z",
+  "timestamp": "2025-06-20T16:07:00.522Z",
   "results": [
     {
       "table": "users",
-      "sqliteCount": 2,
+      "sqliteCount": 4,
       "status": "pending"
     },
     {
       "table": "listings",
-      "sqliteCount": 2,
+      "sqliteCount": 4,
       "status": "pending"
     },
     {
       "table": "offers",
-      "sqliteCount": 2,
+      "sqliteCount": 5,
       "status": "pending"
     }
   ],
