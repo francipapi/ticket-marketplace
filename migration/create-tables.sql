@@ -131,6 +131,10 @@ CREATE POLICY "Users can view own profile" ON users
 CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = "supabaseId");
 
+-- Users can insert their own user record if it matches their Supabase Auth ID
+CREATE POLICY "Users can insert their own user record" ON users
+  FOR INSERT WITH CHECK (auth.uid() = "supabaseId");
+
 -- Public can view active listings
 CREATE POLICY "Anyone can view active listings" ON listings
   FOR SELECT USING (status = 'active');

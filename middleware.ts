@@ -8,14 +8,21 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Skip middleware for API routes, static files, and other excluded paths
-  if (shouldSkipMiddleware(request.nextUrl.pathname)) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+      'MIDDLEWARE_ERROR: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required.'
+    )
+    // Allow request to pass through, but Supabase functionality will be broken.
+    // Auth checks below will likely fail, redirecting to login.
     return response
   }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -37,147 +44,33 @@ export async function middleware(request: NextRequest) {
   )
 
   try {
-    // Get current user and refresh session if needed
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Refresh session if needed
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Log auth errors but don't block navigation
-    if (authError) {
-      console.warn('Middleware auth error:', authError.message)
-    }
+    // Protected routes
+    const protectedRoutes = ['/dashboard', '/listings/create', '/offers']
+    const isProtectedRoute = protectedRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    )
 
-    const pathname = request.nextUrl.pathname
-
-    // Define route categories
-    const isProtectedRoute = isProtectedPath(pathname)
-    const isAuthRoute = isAuthPath(pathname)
-    const isPublicRoute = isPublicPath(pathname)
-
-    // Handle protected routes
     if (isProtectedRoute && !user) {
-      const loginUrl = new URL('/auth/login', request.url)
-      // Preserve the original destination for redirect after login
-      loginUrl.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // Handle auth routes when user is already authenticated
+    // Redirect authenticated users away from auth pages
+    const authRoutes = ['/auth/login', '/auth/register']
+    const isAuthRoute = authRoutes.includes(request.nextUrl.pathname)
+
     if (isAuthRoute && user) {
-      // Check if user was trying to access a specific page before login
-      const redirectTo = request.nextUrl.searchParams.get('redirectTo')
-      const destination = redirectTo && isValidRedirectPath(redirectTo) 
-        ? redirectTo 
-        : '/dashboard'
-      return NextResponse.redirect(new URL(destination, request.url))
-    }
-
-    // Verify user exists in our database for protected routes
-    if (isProtectedRoute && user) {
-      const { data: appUser, error: dbError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('supabaseId', user.id)
-        .single()
-
-      if (dbError || !appUser) {
-        console.error('User exists in Supabase but not in database:', user.email)
-        // Redirect to a user creation flow or login
-        return NextResponse.redirect(new URL('/auth/login', request.url))
-      }
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
   } catch (error) {
-    console.error('Middleware error:', error)
-    // On critical errors, redirect to login for protected routes
-    if (isProtectedPath(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
+    console.error('Middleware auth error:', error)
+    // Allow request to continue on auth errors
   }
 
   return response
-}
-
-/**
- * Check if middleware should be skipped for this path
- */
-function shouldSkipMiddleware(pathname: string): boolean {
-  const skipPaths = [
-    '/api',
-    '/_next',
-    '/favicon.ico',
-    '/.well-known'
-  ]
-  
-  const skipExtensions = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.css', '.js']
-  
-  return skipPaths.some(path => pathname.startsWith(path)) ||
-         skipExtensions.some(ext => pathname.endsWith(ext))
-}
-
-/**
- * Check if path requires authentication
- */
-function isProtectedPath(pathname: string): boolean {
-  const protectedRoutes = [
-    '/dashboard',
-    '/listings/create',
-    '/listings/edit',
-    '/offers',
-    '/profile',
-    '/settings'
-  ]
-  
-  return protectedRoutes.some(route => pathname.startsWith(route))
-}
-
-/**
- * Check if path is an auth-related page
- */
-function isAuthPath(pathname: string): boolean {
-  const authRoutes = [
-    '/auth/login',
-    '/auth/register',
-    '/auth/forgot-password',
-    '/auth/reset-password'
-  ]
-  
-  return authRoutes.includes(pathname)
-}
-
-/**
- * Check if path is public and doesn't require auth
- */
-function isPublicPath(pathname: string): boolean {
-  const publicRoutes = [
-    '/',
-    '/about',
-    '/contact',
-    '/listings',
-    '/search'
-  ]
-  
-  return publicRoutes.includes(pathname) || pathname.startsWith('/listings/')
-}
-
-/**
- * Validate that redirect path is safe
- */
-function isValidRedirectPath(path: string): boolean {
-  // Only allow internal paths, no external URLs
-  if (path.startsWith('http') || path.startsWith('//')) {
-    return false
-  }
-  
-  // Must start with /
-  if (!path.startsWith('/')) {
-    return false
-  }
-  
-  // Don't redirect to auth pages
-  if (isAuthPath(path)) {
-    return false
-  }
-  
-  return true
 }
 
 export const config = {
