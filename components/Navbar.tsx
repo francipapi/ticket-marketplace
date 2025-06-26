@@ -5,11 +5,11 @@ import { useAuth } from '@/app/providers';
 import { User, LogOut, Plus, Home } from 'lucide-react';
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
     } catch (error) {
       console.error('Logout error:', error);
     }

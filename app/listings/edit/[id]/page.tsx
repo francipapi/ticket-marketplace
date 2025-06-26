@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/providers';
 import toast from 'react-hot-toast';
@@ -44,13 +44,7 @@ export default function EditListingPage() {
     }
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchListing();
-    }
-  }, [params.id]);
-
-  const fetchListing = async () => {
+  const fetchListing = useCallback(async () => {
     try {
       const response = await fetch(`/api/listings/${params.id}`);
       const result = await response.json();
@@ -91,7 +85,13 @@ export default function EditListingPage() {
     } finally {
       setLoadingListing(false);
     }
-  };
+  }, [params.id, user, router]);
+
+  useEffect(() => {
+    if (params.id && user) {
+      fetchListing();
+    }
+  }, [params.id, user, fetchListing]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

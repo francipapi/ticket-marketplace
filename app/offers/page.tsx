@@ -53,8 +53,8 @@ export default function OffersPage() {
     try {
       // Fetch both sent and received offers
       const [sentResponse, receivedResponse] = await Promise.all([
-        fetch('/api/offers?type=sent'),
-        fetch('/api/offers?type=received')
+        fetch('/api/offers/supabase?type=sent'),
+        fetch('/api/offers/supabase?type=received')
       ]);
 
       const [sentResult, receivedResult] = await Promise.all([
@@ -62,12 +62,15 @@ export default function OffersPage() {
         receivedResponse.json()
       ]);
 
-      if (sentResult.success) {
-        setSentOffers(sentResult.data);
+      // Handle both old and new response formats
+      const sentOffers = sentResult.success ? sentResult.data.offers : sentResult.offers;
+      if (sentOffers) {
+        setSentOffers(sentOffers);
       }
 
-      if (receivedResult.success) {
-        setReceivedOffers(receivedResult.data);
+      const receivedOffers = receivedResult.success ? receivedResult.data.offers : receivedResult.offers;
+      if (receivedOffers) {
+        setReceivedOffers(receivedOffers);
       }
     } catch (error) {
       console.error('Error fetching offers:', error);
@@ -103,15 +106,15 @@ export default function OffersPage() {
 
   const handleOfferResponse = async (offerId: string, response: 'accept' | 'reject') => {
     try {
-      const res = await fetch(`/api/offers/${offerId}/respond`, {
-        method: 'POST',
+      const res = await fetch(`/api/offers/supabase/${offerId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ response }),
+        body: JSON.stringify({ action: response }),
       });
 
       const result = await res.json();
 
-      if (result.success) {
+      if (result.offer) {
         toast.success(`Offer ${response}ed successfully!`);
         fetchOffers(); // Refresh offers
       } else {
@@ -125,15 +128,15 @@ export default function OffersPage() {
 
   const handlePayment = async (offerId: string) => {
     try {
-      const res = await fetch('/api/payments/mock-pay', {
-        method: 'POST',
+      const res = await fetch(`/api/offers/supabase/${offerId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId }),
+        body: JSON.stringify({ action: 'pay' }),
       });
 
       const result = await res.json();
 
-      if (result.success) {
+      if (result.offer) {
         toast.success('Payment successful! You can now download your tickets.');
         fetchOffers(); // Refresh offers
       } else {
@@ -151,7 +154,7 @@ export default function OffersPage() {
     }
 
     try {
-      const res = await fetch(`/api/offers/${offerId}`, {
+      const res = await fetch(`/api/offers/supabase/${offerId}`, {
         method: 'DELETE',
       });
 
@@ -187,10 +190,11 @@ export default function OffersPage() {
     setEditingInProgress(true);
 
     try {
-      const res = await fetch(`/api/offers/${editingOffer.id}`, {
+      const res = await fetch(`/api/offers/supabase/${editingOffer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'update',
           offerPriceInCents: Math.round(price * 100),
           quantity,
         }),
@@ -198,7 +202,7 @@ export default function OffersPage() {
 
       const result = await res.json();
 
-      if (result.success) {
+      if (result.offer) {
         toast.success('Offer updated successfully');
         setEditingOffer(null);
         setEditPrice('');
@@ -286,7 +290,7 @@ export default function OffersPage() {
                 <>
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No offers received</h3>
-                  <p className="text-gray-600 mb-4">When buyers make offers on your listings, they'll appear here</p>
+                  <p className="text-gray-600 mb-4">When buyers make offers on your listings, they&apos;ll appear here</p>
                   <Link
                     href="/listings/create"
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -399,7 +403,7 @@ export default function OffersPage() {
                       
                       {activeTab === 'sent' && offer.status === 'completed' && offer.isPaid && (
                         <a
-                          href={`/api/offers/${offer.id}/download`}
+                          href={`/api/offers/supabase/${offer.id}/download`}
                           download
                           className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                         >

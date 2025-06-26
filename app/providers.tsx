@@ -1,6 +1,6 @@
 'use client';
 
-import { AuthProvider, useAuth } from './providers/auth-provider';
+import AuthProvider, { useAuth } from './providers/auth-provider';
 
 // Simple providers wrapper
 export function Providers({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getServerUser } from '@/lib/supabase-server'
-import { createResponse, createErrorResponse } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 const createOfferSchema = z.object({
@@ -14,12 +14,12 @@ const createOfferSchema = z.object({
 // GET /api/offers/supabase - Get user's offers
 export async function GET(request: NextRequest) {
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'sent' // 'sent' or 'received'
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 // POST /api/offers/supabase - Create new offer
 export async function POST(request: NextRequest) {
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createOfferSchema.parse(body)
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
 
     // Verify listing exists and is active
     const { data: listing, error: listingError } = await supabase

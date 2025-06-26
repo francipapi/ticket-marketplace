@@ -60,24 +60,12 @@ async function migrateUsers(users: Phase0Data['users']): Promise<{ migrated: num
       await supabasePrisma.user.create({
         data: {
           id: authUser.user.id, // Use Supabase Auth ID as primary key
-          supabaseId: authUser.user.id,
           email: user.email,
           username: user.username,
+          passwordHash: '', // No longer needed with Supabase Auth
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
-          migratedAt: new Date(),
-          migrationStatus: 'migrated',
-          migratedFromId: user.id
-        }
-      })
-
-      // Create profile record
-      await supabasePrisma.profile.create({
-        data: {
-          id: authUser.user.id,
-          username: user.username,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt
+          migrationStatus: 'migrated'
         }
       })
 
@@ -86,8 +74,6 @@ async function migrateUsers(users: Phase0Data['users']): Promise<{ migrated: num
         data: {
           tableName: 'users',
           recordId: authUser.user.id,
-          oldId: user.id,
-          newId: authUser.user.id,
           status: 'completed'
         }
       })
@@ -106,7 +92,6 @@ async function migrateUsers(users: Phase0Data['users']): Promise<{ migrated: num
           data: {
             tableName: 'users',
             recordId: user.id,
-            oldId: user.id,
             status: 'failed',
             error: errorMsg
           }
@@ -153,9 +138,7 @@ async function migrateListings(
           fileSize: listing.fileSize,
           status: listing.status,
           createdAt: listing.createdAt,
-          updatedAt: listing.updatedAt,
-          migratedAt: new Date(),
-          migratedFromId: listing.id
+          updatedAt: listing.updatedAt
         }
       })
 
@@ -164,8 +147,6 @@ async function migrateListings(
         data: {
           tableName: 'listings',
           recordId: newListing.id,
-          oldId: listing.id,
-          newId: newListing.id,
           status: 'completed'
         }
       })
@@ -220,9 +201,7 @@ async function migrateOffers(
           createdAt: offer.createdAt,
           updatedAt: offer.updatedAt,
           isPaid: offer.isPaid,
-          paidAt: offer.paidAt,
-          migratedAt: new Date(),
-          migratedFromId: offer.id
+          paidAt: offer.paidAt
         }
       })
 
@@ -231,8 +210,6 @@ async function migrateOffers(
         data: {
           tableName: 'offers',
           recordId: newOffer.id,
-          oldId: offer.id,
-          newId: newOffer.id,
           status: 'completed'
         }
       })
@@ -255,20 +232,19 @@ async function buildUserIdMapping(): Promise<Map<string, string>> {
   
   const migratedUsers = await supabasePrisma.user.findMany({
     where: {
-      migrationStatus: 'migrated',
-      migratedFromId: { not: null }
+      migrationStatus: 'migrated'
     },
     select: {
-      id: true,
-      migratedFromId: true
+      id: true
     }
   })
 
-  for (const user of migratedUsers) {
-    if (user.migratedFromId) {
-      mapping.set(user.migratedFromId, user.id)
-    }
-  }
+  // Migration field mapping disabled - migratedFromId field doesn't exist
+  // for (const user of migratedUsers) {
+  //   if (user.migratedFromId) {
+  //     mapping.set(user.migratedFromId, user.id)
+  //   }
+  // }
 
   return mapping
 }
@@ -276,21 +252,21 @@ async function buildUserIdMapping(): Promise<Map<string, string>> {
 async function buildListingIdMapping(): Promise<Map<string, string>> {
   const mapping = new Map<string, string>()
   
-  const migratedListings = await supabasePrisma.listing.findMany({
-    where: {
-      migratedFromId: { not: null }
-    },
-    select: {
-      id: true,
-      migratedFromId: true
-    }
-  })
+  // Migration field mapping disabled - migratedFromId field doesn't exist
+  // const migratedListings = await supabasePrisma.listing.findMany({
+  //   where: {
+  //     migratedFromId: { not: null }
+  //   },
+  //   select: {
+  //     id: true
+  //   }
+  // })
 
-  for (const listing of migratedListings) {
-    if (listing.migratedFromId) {
-      mapping.set(listing.migratedFromId, listing.id)
-    }
-  }
+  // for (const listing of migratedListings) {
+  //   if (listing.migratedFromId) {
+  //     mapping.set(listing.migratedFromId, listing.id)
+  //   }
+  // }
 
   return mapping
 }

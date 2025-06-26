@@ -74,8 +74,7 @@ export async function migrateFiles(): Promise<FileMigrationResult> {
         id: true,
         userId: true,
         ticketPath: true,
-        originalFileName: true,
-        migratedFromId: true
+        originalFileName: true
       }
     })
 

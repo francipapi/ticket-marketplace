@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getServerUser } from '@/lib/supabase-server'
-import { createResponse, createErrorResponse } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // GET /api/listings/supabase/[id] - Get single listing
 export async function GET(request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     const { data: listing, error } = await supabase
       .from('listings')
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !listing) {
@@ -57,19 +58,20 @@ export async function GET(request: NextRequest, { params }: Props) {
 
 // PUT /api/listings/supabase/[id] - Update listing (owner only)
 export async function PUT(request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     // Check if user owns this listing
     const { data: existingListing, error: fetchError } = await supabase
       .from('listings')
       .select('userId')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !existingListing) {
@@ -100,7 +102,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
     const { data: updatedListing, error: updateError } = await supabase
       .from('listings')
       .update(allowedUpdates)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -127,20 +129,21 @@ export async function PUT(request: NextRequest, { params }: Props) {
 }
 
 // DELETE /api/listings/supabase/[id] - Delete listing (owner only)
-export async function DELETE(request: NextRequest, { params }: Props) {
+export async function DELETE(_request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     // Check ownership and get file path for cleanup
     const { data: listing, error: fetchError } = await supabase
       .from('listings')
       .select('userId, ticketPath')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !listing) {
@@ -161,7 +164,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     const { error: deleteError } = await supabase
       .from('listings')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (deleteError) {
       console.error('Delete listing error:', deleteError)

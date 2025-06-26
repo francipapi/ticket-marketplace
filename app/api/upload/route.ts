@@ -1,15 +1,10 @@
 import { NextRequest } from 'next/server';
 import { fileService } from '@/lib/upload';
-import { createResponse, createErrorResponse, withAuth } from '@/lib/api-helpers';
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers';
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await withAuth(request);
-    if (!authResult.success) {
-      return createErrorResponse(authResult.error, 401);
-    }
-
-    const { user } = authResult;
+    const user = await requireAuth();
 
     const formData = await request.formData();
     const file = formData.get('file') as File;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getServerUser } from '@/lib/supabase-server'
-import { createResponse, createErrorResponse } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers'
 import { z } from 'zod'
 
 const createListingSchema = z.object({
@@ -21,7 +21,7 @@ const createListingSchema = z.object({
 // GET /api/listings/supabase - Browse listings
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     
     const page = parseInt(searchParams.get('page') || '1')
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 // POST /api/listings/supabase - Create new listing
 export async function POST(request: NextRequest) {
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createListingSchema.parse(body)
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
 
     // Convert eventDate string to Date object
     const eventDate = new Date(validatedData.eventDate)

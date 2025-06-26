@@ -5,7 +5,17 @@
       "Bash(node:*)",
       "Bash(npx tsx:*)",
       "Bash(curl:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(rm:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

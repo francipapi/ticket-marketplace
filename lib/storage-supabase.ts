@@ -116,6 +116,13 @@ export class SupabaseStorageService implements FileStorageService {
       const fileBuffer = readFileSync(fullLocalPath)
       
       // Upload to Supabase Storage using admin client for migration
+      if (!supabaseAdmin) {
+        return {
+          success: false,
+          error: 'Supabase admin client not configured'
+        }
+      }
+      
       const { data, error } = await supabaseAdmin.storage
         .from(this.bucketName)
         .upload(supabasePath, fileBuffer, {
@@ -157,6 +164,11 @@ export class SupabaseStorageService implements FileStorageService {
   // Initialize bucket and policies
   async initializeBucket(): Promise<boolean> {
     try {
+      if (!supabaseAdmin) {
+        console.log('❌ Supabase admin client not configured')
+        return false
+      }
+      
       // Create bucket (this will fail silently if it already exists)
       await supabaseAdmin.storage.createBucket(this.bucketName, {
         public: false,
@@ -197,12 +209,12 @@ export class LocalStorageService implements FileStorageService {
     return `/uploads/${path}`
   }
 
-  async deleteFile(path: string): Promise<boolean> {
+  async deleteFile(): Promise<boolean> {
     // Implement local file deletion
     return true
   }
 
-  async migrateLocalFile(localPath: string, supabasePath: string): Promise<FileUploadResult> {
+  async migrateLocalFile(localPath: string): Promise<FileUploadResult> {
     // No migration needed for local storage
     return {
       success: true,

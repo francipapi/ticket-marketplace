@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/providers';
 import Link from 'next/link';
@@ -48,13 +48,7 @@ export default function ListingDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showOfferModal, setShowOfferModal] = useState(false);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchListing();
-    }
-  }, [params.id]);
-
-  const fetchListing = async () => {
+  const fetchListing = useCallback(async () => {
     try {
       const response = await fetch(`/api/listings/supabase/${params.id}`);
       const result = await response.json();
@@ -74,7 +68,13 @@ export default function ListingDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchListing();
+    }
+  }, [fetchListing, params.id]);
 
   const formatPrice = (priceInCents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -377,7 +377,7 @@ function OfferModal({
                 onChange={(e) => setMessageTemplate(e.target.value)}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="asking_price">I'll buy at asking price</option>
+                <option value="asking_price">I&apos;ll buy at asking price</option>
                 <option value="make_offer">I want to make a custom offer</option>
                 <option value="check_availability">Is this still available?</option>
               </select>

@@ -1,22 +1,15 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { createOfferSchema } from '@/lib/validations';
 import { 
   createResponse, 
   createErrorResponse, 
-  withAuth, 
-  withAuthAndValidation 
+  requireAuth
 } from '@/lib/api-helpers';
 
 // GET /api/offers - Get user's offers (sent and received)
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await withAuth(request);
-    if (!authResult.success) {
-      return createErrorResponse(authResult.error, 401);
-    }
-
-    const { user } = authResult;
+    const user = await requireAuth();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'sent' or 'received'
 
@@ -132,13 +125,9 @@ export async function GET(request: NextRequest) {
 // POST /api/offers - Create new offer
 export async function POST(request: NextRequest) {
   try {
-    const result = await withAuthAndValidation(request, createOfferSchema);
-    if (!result.success) {
-      return createErrorResponse(result.error);
-    }
-
-    const { user, data } = result;
-    const { listingId, offerPrice, quantity, messageTemplate, customMessage } = data;
+    const user = await requireAuth();
+    const body = await request.json();
+    const { listingId, offerPrice, quantity, messageTemplate, customMessage } = body;
 
     // Check if listing exists and is active
     const listing = await prisma.listing.findUnique({
