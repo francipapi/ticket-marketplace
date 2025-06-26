@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerUser } from '@/lib/supabase-server'
-import { createResponse, createErrorResponse } from '@/lib/api-auth'
+import { requireAuth } from '@/lib/api-helpers'
+import { storageService } from '@/lib/storage-supabase'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const user = await getServerUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const user = await requireAuth()
 
     const formData = await request.formData()
     const file = formData.get('file') as File

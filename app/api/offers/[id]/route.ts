@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { authService } from '@/lib/auth';
+import { requireAuth } from '@/lib/api-helpers';
 
 const prisma = new PrismaClient();
 
@@ -10,23 +10,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '') || 
-                  request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const user = authService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const user = await requireAuth();
 
     // Verify user still exists in database
     const dbUser = await prisma.user.findUnique({
@@ -135,84 +119,4 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '') || 
-                  request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const user = authService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Verify user still exists in database
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { id: true, email: true, username: true },
-    });
-    
-    if (!dbUser) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 401 }
-      );
-    }
-
-    // Verify the offer exists and belongs to the user
-    const existingOffer = await prisma.offer.findUnique({
-      where: { id },
-    });
-
-    if (!existingOffer) {
-      return NextResponse.json(
-        { success: false, error: 'Offer not found' },
-        { status: 404 }
-      );
-    }
-
-    if (existingOffer.buyerId !== dbUser.id) {
-      return NextResponse.json(
-        { success: false, error: 'You can only delete your own offers' },
-        { status: 403 }
-      );
-    }
-
-    if (existingOffer.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: 'You can only cancel pending offers' },
-        { status: 400 }
-      );
-    }
-
-    // Delete the offer
-    await prisma.offer.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Offer cancelled successfully',
-    });
-
-  } catch (error) {
-    console.error('Error deleting offer:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to cancel offer' },
-      { status: 500 }
-    );
-  }
-}
+// DELETE function removed - now handled by supabase routes

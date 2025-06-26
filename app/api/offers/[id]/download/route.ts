@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { authService } from '@/lib/auth';
+import { requireAuth } from '@/lib/api-helpers';
 import fs from 'fs';
 import path from 'path';
 
@@ -12,23 +12,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '') || 
-                  request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const user = authService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const user = await requireAuth();
 
     // Verify user still exists in database
     const dbUser = await prisma.user.findUnique({

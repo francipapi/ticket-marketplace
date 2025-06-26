@@ -1,16 +1,11 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { createResponse, createErrorResponse, withAuth } from '@/lib/api-helpers';
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers';
 
 // POST /api/payments/mock-pay - Mock payment processing
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await withAuth(request);
-    if (!authResult.success) {
-      return createErrorResponse(authResult.error, 401);
-    }
-
-    const { user } = authResult;
+    const user = await requireAuth();
     const { offerId } = await request.json();
 
     if (!offerId) {

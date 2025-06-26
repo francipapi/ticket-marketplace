@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+// import bcrypt from 'bcryptjs'; // No longer needed with Supabase Auth
 
 const prisma = new PrismaClient();
 
@@ -7,7 +7,7 @@ async function main() {
   console.log('🌱 Seeding the database...');
 
   // Create test users
-  const hashedPassword = await bcrypt.hash('password123', 12);
+  const hashedPassword = 'placeholder'; // No longer needed with Supabase Auth
   
   const alice = await prisma.user.upsert({
     where: { email: 'alice@example.com' },

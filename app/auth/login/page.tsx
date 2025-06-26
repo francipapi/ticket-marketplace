@@ -1,56 +1,62 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/app/providers';
-import toast from 'react-hot-toast';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { useAuth } from '@/app/providers/auth-provider'
+import toast from 'react-hot-toast'
+import { Mail, Lock, LogIn, Loader2 } from 'lucide-react'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, user, loading: authLoading } = useAuth();
-  const router = useRouter();
+function LoginForm() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { signIn, user, loading: authLoading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log('Login page auth state:', { user: !!user, authLoading, email: user?.email })
     if (!authLoading && user) {
-      console.log('Redirecting to dashboard...')
-      router.push('/dashboard');
+      const redirectTo = searchParams.get('redirectTo')
+      const destination = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('/auth') 
+        ? redirectTo 
+        : '/dashboard'
+      router.push(destination)
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setIsSubmitting(true)
 
     try {
-      await login(email, password);
-      toast.success('Welcome back!');
+      const result = await signIn({ email, password })
       
-      // The useEffect above will handle the redirect when user state updates
-      // No need to manually redirect here
+      if (result.success) {
+        toast.success('Welcome back!')
+        // Redirect will be handled by useEffect
+      } else {
+        toast.error(result.error || 'Login failed')
+      }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Login failed';
-      toast.error(message);
+      const message = error instanceof Error ? error.message : 'Login failed'
+      toast.error(message)
     } finally {
-      setLoading(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   // Show loading while checking auth status
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600">Checking authentication...</p>
         </div>
       </div>
-    );
+    )
   }
 
   // If we have a user and we're on the login page, something is wrong with redirect
@@ -61,14 +67,14 @@ export default function LoginPage() {
         <div className="text-center">
           <p className="text-gray-600 mb-4">You are already logged in as {user.email}</p>
           <button
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => router.push('/dashboard')}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Go to Dashboard
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -137,10 +143,17 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
             </button>
           </div>
 
@@ -175,4 +188,12 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 }

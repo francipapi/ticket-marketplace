@@ -1,11 +1,9 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { updateListingSchema } from '@/lib/validations';
 import { 
   createResponse, 
   createErrorResponse, 
-  withAuth, 
-  withValidation 
+  requireAuth
 } from '@/lib/api-helpers';
 
 // GET /api/listings/[id] - Get single listing
@@ -67,18 +65,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await withAuth(request);
-    if (!authResult.success) {
-      return createErrorResponse(authResult.error, 401);
-    }
-
-    const validationResult = await withValidation(request, updateListingSchema);
-    if (!validationResult.success) {
-      return createErrorResponse(validationResult.error);
-    }
-
-    const { user } = authResult;
-    const data = validationResult.data;
+    const user = await requireAuth();
+    const body = await request.json();
+    const data = body;
     const { id } = await params;
 
     // Check if listing exists and user owns it
@@ -130,12 +119,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await withAuth(request);
-    if (!authResult.success) {
-      return createErrorResponse(authResult.error, 401);
-    }
-
-    const { user } = authResult;
+    const user = await requireAuth();
     const { id } = await params;
 
     // Check if listing exists and user owns it

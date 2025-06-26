@@ -100,12 +100,6 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/login');
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
     if (user) {
       fetchDashboardData();
     }
@@ -269,7 +263,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow p-6 text-center">
             <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No offers received</h3>
-            <p className="text-gray-600">When buyers make offers on your listings, they'll appear here</p>
+            <p className="text-gray-600">When buyers make offers on your listings, they&apos;ll appear here</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">

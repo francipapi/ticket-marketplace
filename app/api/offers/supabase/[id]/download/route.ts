@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unifiedAuthService } from '@/lib/auth-supabase'
-import { createServerSupabaseClient } from '@/lib/auth-supabase'
+import { requireAuth } from '@/lib/api-helpers'
+import { createClient } from '@/lib/supabase/server'
 import { storageService } from '@/lib/storage-supabase'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
+}
+
+interface OfferWithListing {
+  id: string
+  offerPriceInCents: number
+  quantity: number
+  paidAt: string
+  listing: {
+    title: string
+  }
+  buyer: {
+    username: string
+  }
 }
 
 // GET /api/offers/supabase/[id]/download - Download ticket after payment
 export async function GET(request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await unifiedAuthService.getUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const user = await requireAuth()
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     // Get offer with listing info
     const { data: offer, error } = await supabase
@@ -40,7 +48,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           username
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !offer) {
@@ -102,7 +110,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   }
 }
 
-function generateMockTicket(offer: any): string {
+function generateMockTicket(offer: OfferWithListing): string {
   return `
 TICKET CONFIRMATION
 ==================

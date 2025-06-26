@@ -1,20 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getServerUser } from '@/lib/supabase-server'
-import { createResponse, createErrorResponse } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
+import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
+}
+
+interface UpdateFields {
+  status?: string
+  acceptedAt?: string
+  rejectedAt?: string
+  offerPriceInCents?: number
+  quantity?: number
+  customMessage?: string
+  updatedAt?: string
+  isPaid?: boolean
+  paidAt?: string
 }
 
 // GET /api/offers/supabase/[id] - Get single offer
 export async function GET(request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     const { data: offer, error } = await supabase
       .from('offers')
@@ -33,7 +46,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           email
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !offer) {
@@ -65,8 +78,9 @@ export async function GET(request: NextRequest, { params }: Props) {
 
 // PUT /api/offers/supabase/[id] - Update offer (accept/reject/update)
 export async function PUT(request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
@@ -74,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
     const body = await request.json()
     const { action, ...updateData } = body
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     // Get the offer with listing info
     const { data: offer, error: fetchError } = await supabase
@@ -90,7 +104,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
           status
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !offer) {
@@ -107,7 +121,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
       )
     }
 
-    let updateFields: any = {}
+    let updateFields: UpdateFields = {}
 
     if (action === 'accept') {
       // Only listing owner can accept
@@ -155,7 +169,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
       }
 
       // Validate quantity doesn't exceed listing quantity
-      if (updateFields.quantity > offer.listing.quantity) {
+      if (updateFields.quantity && updateFields.quantity > offer.listing.quantity) {
         return NextResponse.json(
           { error: 'Requested quantity exceeds available tickets' },
           { status: 400 }
@@ -197,7 +211,7 @@ export async function PUT(request: NextRequest, { params }: Props) {
     const { data: updatedOffer, error: updateError } = await supabase
       .from('offers')
       .update(updateFields)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         listing:listings (
@@ -237,20 +251,21 @@ export async function PUT(request: NextRequest, { params }: Props) {
 }
 
 // DELETE /api/offers/supabase/[id] - Cancel offer (buyer only)
-export async function DELETE(request: NextRequest, { params }: Props) {
+export async function DELETE(_request: NextRequest, { params }: Props) {
+  const { id } = await params
   try {
-    const user = await getServerUser()
+    const user = await requireAuth()
     if (!user) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createClient()
     
     // Check ownership
     const { data: offer, error: fetchError } = await supabase
       .from('offers')
       .select('buyerId, status')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !offer) {
@@ -278,7 +293,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     const { error: deleteError } = await supabase
       .from('offers')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (deleteError) {
       console.error('Delete offer error:', deleteError)

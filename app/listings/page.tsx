@@ -19,7 +19,12 @@ interface Listing {
   _count?: {
     offers: number;
   };
-  offers?: any[];
+  offers?: Array<{
+    id: string;
+    status: string;
+    offerPriceInCents: number;
+    quantity: number;
+  }>;
 }
 
 export default function ListingsPage() {

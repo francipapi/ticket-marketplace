@@ -1,214 +1,245 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User as SupabaseUser } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-
-interface User {
-  id: string
-  email: string
-  username: string
-}
+import { ClientAuthService, AppUser, SignUpData, SignInData } from '@/lib/auth-client'
 
 interface AuthContextType {
-  user: User | null
+  // State
+  user: AppUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error?: any }>
-  signUp: (email: string, password: string, username: string) => Promise<{ error?: any }>
+  
+  // Actions
+  signIn: (data: SignInData) => Promise<{ success: boolean; error?: string }>
+  signUp: (data: SignUpData) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<void>
-  // Legacy interface compatibility
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
-  logout: () => Promise<void>
+  
+  // Helpers
+  isAuthenticated: boolean
+  checkUsernameAvailability: (username: string) => Promise<{ success: boolean; available?: boolean; error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Fetch user data from our database
+  const fetchUserData = useCallback(async (supabaseUser: User): Promise<AppUser | null> => {
+    try {
+      const { data: appUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('supabaseId', supabaseUser.id)
+        .single()
+
+      if (error || !appUser) {
+        console.error('User not found in database:', supabaseUser.email, error?.message)
+        return null
+      }
+
+      return {
+        id: appUser.id,
+        supabaseId: appUser.supabaseId,
+        email: appUser.email,
+        username: appUser.username,
+        createdAt: new Date(appUser.createdAt),
+        updatedAt: new Date(appUser.updatedAt),
+        migrationStatus: appUser.migrationStatus
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+      return null
+    }
+  }, [])
+
+  // Initialize auth state
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
+    let isMounted = true
+
+    const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.warn('Session error, clearing auth:', error.message)
-          // Clear any invalid tokens
-          await supabase.auth.signOut()
-          setUser(null)
-          setLoading(false)
+          console.error('Auth session error:', error)
+          if (isMounted) {
+            setUser(null)
+            setLoading(false)
+          }
           return
         }
-        
+
         if (session?.user) {
-          await updateUserState(session.user)
+          const userData = await fetchUserData(session.user)
+          if (isMounted) {
+            setUser(userData)
+          }
         } else {
+          if (isMounted) {
+            setUser(null)
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+        if (isMounted) {
           setUser(null)
         }
-        
-        setLoading(false)
-      } catch (error) {
-        console.error('Error getting session:', error)
-        // Clear any corrupted auth state
-        await supabase.auth.signOut()
-        setUser(null)
-        setLoading(false)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
-    getInitialSession()
+    initializeAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email)
-      
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        // Token refresh failed, clear auth
-        console.warn('Token refresh failed, clearing auth')
-        setUser(null)
-        setLoading(false)
-        return
-      }
-      
-      if (session?.user) {
-        await updateUserState(session.user)
-      } else {
-        setUser(null)
-      }
-      
-      setLoading(false)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return
 
-    return () => subscription.unsubscribe()
-  }, [])
+        console.log('Auth state change:', event)
 
-  const updateUserState = async (supabaseUser: SupabaseUser) => {
-    try {
-      // Get or create user in our database
-      let { data: userData, error } = await supabase
-        .from('users')
-        .select('id, email, username')
-        .eq('supabaseId', supabaseUser.id)
-        .single()
-
-      if (error || !userData) {
-        // Create user if doesn't exist
-        const username = supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'user'
-        
-        const { data: newUser, error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: supabaseUser.id,
-            supabaseId: supabaseUser.id,
-            email: supabaseUser.email!,
-            username: username,
-            migrationStatus: 'auto'
-          })
-          .select('id, email, username')
-          .single()
-
-        if (!insertError && newUser) {
-          userData = newUser
-        } else {
-          // Fallback to basic user data
-          userData = {
-            id: supabaseUser.id,
-            email: supabaseUser.email!,
-            username: supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'user'
+        try {
+          if (event === 'SIGNED_IN' && session?.user) {
+            setLoading(true)
+            const userData = await fetchUserData(session.user)
+            if (isMounted) {
+              setUser(userData)
+              setLoading(false)
+            }
+          } else if (event === 'SIGNED_OUT') {
+            if (isMounted) {
+              setUser(null)
+              setLoading(false)
+            }
+          } else if (event === 'TOKEN_REFRESHED') {
+            // Keep existing user data on token refresh
+            console.log('Token refreshed')
+          }
+        } catch (error) {
+          console.error('Error in auth state change:', error)
+          if (isMounted) {
+            setUser(null)
+            setLoading(false)
           }
         }
       }
+    )
 
-      setUser({
-        id: userData.id,
-        email: userData.email,
-        username: userData.username
-      })
-
-    } catch (error) {
-      console.error('Error updating user state:', error)
-      // Fallback to basic auth data
-      setUser({
-        id: supabaseUser.id,
-        email: supabaseUser.email!,
-        username: supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'user'
-      })
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
     }
-  }
+  }, [fetchUserData])
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-
-    return { error }
-  }
-
-  const signUp = async (email: string, password: string, username: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username
-        }
+  // Sign in function
+  const signIn = useCallback(async (data: SignInData) => {
+    try {
+      setLoading(true)
+      const result = await ClientAuthService.signIn(data)
+      
+      if (result.success) {
+        // User state will be updated by the auth state change listener
+        return { success: true }
+      } else {
+        return { success: false, error: result.error }
       }
-    })
-
-    return { error }
-  }
-
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-  }
-
-  // Legacy interface wrappers
-  const login = async (email: string, password: string) => {
-    const { error } = await signIn(email, password)
-    if (error) {
-      throw new Error(error.message || 'Login failed')
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Login failed' 
+      }
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [])
 
-  const register = async (email: string, username: string, password: string) => {
-    const { error } = await signUp(email, password, username)
-    if (error) {
-      throw new Error(error.message || 'Registration failed')
+  // Sign up function
+  const signUp = useCallback(async (data: SignUpData) => {
+    try {
+      setLoading(true)
+      const result = await ClientAuthService.signUp(data)
+      
+      if (result.success) {
+        // User state will be updated by the auth state change listener
+        return { success: true }
+      } else {
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Registration failed' 
+      }
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [])
 
-  const logout = async () => {
-    await signOut()
+  // Sign out function
+  const signOut = useCallback(async () => {
+    try {
+      setLoading(true)
+      await ClientAuthService.signOut()
+      // User state will be updated by the auth state change listener
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Check username availability
+  const checkUsernameAvailability = useCallback(async (username: string) => {
+    try {
+      const result = await ClientAuthService.checkUsernameAvailability(username)
+      
+      if (result.success) {
+        return { success: true, available: result.data }
+      } else {
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Username check failed' 
+      }
+    }
+  }, [])
+
+  const value: AuthContextType = {
+    // State
+    user,
+    loading,
+    
+    // Actions
+    signIn,
+    signUp,
+    signOut,
+    
+    // Helpers
+    isAuthenticated: !!user,
+    checkUsernameAvailability
   }
 
   return (
-    <AuthContext.Provider 
-      value={{
-        user,
-        loading,
-        signIn,
-        signUp,
-        signOut,
-        // Legacy interface
-        login,
-        register,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }
+
+// Export for convenience
+export default AuthProvider
