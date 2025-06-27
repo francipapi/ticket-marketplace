@@ -1,23 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const cookieStore = await cookies()
-  const allCookies = cookieStore.getAll()
-  
-  // Filter for Supabase cookies
-  const supabaseCookies = allCookies.filter(cookie => 
-    cookie.name.includes('supabase') || cookie.name.includes('sb-')
-  )
-  
-  return NextResponse.json({
-    totalCookies: allCookies.length,
-    supabaseCookies: supabaseCookies.length,
-    allCookieNames: allCookies.map(c => c.name),
-    supabaseDetails: supabaseCookies,
-    headers: {
-      authorization: request.headers.get('authorization'),
-      cookie: request.headers.get('cookie')
-    }
-  })
+export async function GET() {
+  try {
+    return NextResponse.json({
+      status: 'ok',
+      message: 'API is working',
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    return NextResponse.json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
 }

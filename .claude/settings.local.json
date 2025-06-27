@@ -15,7 +15,9 @@
       "Bash(npx prisma db push:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(pkill:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

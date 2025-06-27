@@ -29,49 +29,85 @@ export interface SignInData {
   password: string
 }
 
-// Client-side auth functions
-export class ClientAuthService {
+// Simplified auth service that relies on database triggers
+export class SimpleAuthService {
   /**
-   * Sign up a new user - now uses server-side registration
+   * Sign up a new user using direct Supabase auth + database triggers
    */
   static async signUp({ email, password, username }: SignUpData): Promise<AuthResult<AppUser>> {
     try {
-      console.log('Starting server-side signup process for:', { email, username })
+      console.log('Starting simple signup process for:', { email, username })
       
-      // Call our server-side registration endpoint
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, username }),
+      // Basic validation
+      if (!username || username.length < 3) {
+        return { success: false, error: 'Username must be at least 3 characters long' }
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return { success: false, error: 'Username can only contain letters, numbers, and underscores' }
+      }
+
+      // Check if username is already taken
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle()
+
+      if (existingUser) {
+        return { success: false, error: 'Username is already taken' }
+      }
+
+      // Sign up with Supabase Auth - the database trigger will handle user record creation
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username
+          }
+        }
       })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        console.error('Server-side registration failed:', result)
-        return { success: false, error: result.error || 'Registration failed' }
+      if (error) {
+        console.error('Supabase signup error:', error)
+        return { success: false, error: error.message }
       }
 
-      if (!result.success) {
-        return { success: false, error: result.error }
+      if (!data.user) {
+        return { success: false, error: 'Failed to create user account' }
       }
 
-      console.log('Server-side registration successful:', result.user.id)
+      console.log('Supabase user created:', data.user.id)
 
-      // Now sign in the user to create a session
-      const signInResult = await this.signIn({ email, password })
-      
-      if (signInResult.success) {
-        return { success: true, data: signInResult.data }
-      } else {
-        // Registration succeeded but sign-in failed - user exists but can't log in
-        console.warn('Registration succeeded but auto sign-in failed:', signInResult.error)
+      // Wait a moment for the database trigger to create the user record
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Fetch the created user record
+      const { data: appUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('supabaseId', data.user.id)
+        .single()
+
+      if (fetchError || !appUser) {
+        console.error('Failed to fetch created user record:', fetchError)
         return { 
-          success: true, 
-          data: result.user,
-          error: 'Account created successfully. Please try logging in.'
+          success: false, 
+          error: 'Account created but user profile not found. Please try logging in.' 
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          id: appUser.id,
+          supabaseId: appUser.supabaseId,
+          email: appUser.email,
+          username: appUser.username,
+          createdAt: new Date(appUser.createdAt),
+          updatedAt: new Date(appUser.updatedAt),
+          migrationStatus: appUser.migrationStatus
         }
       }
 
@@ -145,32 +181,7 @@ export class ClientAuthService {
   }
 
   /**
-   * Get current session
-   */
-  static async getCurrentSession() {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error) {
-        // Handle refresh token errors specifically
-        if (error.message.includes('Invalid Refresh Token') || error.message.includes('Refresh Token Not Found')) {
-          console.warn('Refresh token invalid, clearing session')
-          await supabase.auth.signOut()
-          return null
-        }
-        console.error('Session error:', error)
-        return null
-      }
-      
-      return session
-    } catch (error) {
-      console.error('Session check failed:', error)
-      return null
-    }
-  }
-
-  /**
-   * Check if username is available (server-side)
+   * Check if username is available
    */
   static async checkUsernameAvailability(username: string): Promise<AuthResult<boolean>> {
     try {
@@ -182,33 +193,24 @@ export class ClientAuthService {
         return { success: false, error: 'Username can only contain letters, numbers, and underscores' }
       }
 
-      const response = await fetch('/api/auth/check-username', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username }),
-      })
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle()
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        return { success: false, error: result.error || 'Username validation failed' }
+      if (error) {
+        console.error('Username check error:', error)
+        return { success: false, error: 'Username validation failed' }
       }
 
-      if (!result.success) {
-        return { success: false, error: result.error }
-      }
-
-      return { success: true, data: result.available }
+      return { success: true, data: !data } // Available if no data returned
     } catch (error) {
       console.error('Username validation error:', error)
       return { success: false, error: 'Username validation failed' }
     }
   }
-
-  // Note: User creation is now handled server-side in /api/auth/register
 }
 
-// Convenience exports
-export const { signUp, signIn, signOut, getCurrentSession, checkUsernameAvailability } = ClientAuthService
+// Export individual functions for convenience
+export const { signUp, signIn, signOut, checkUsernameAvailability } = SimpleAuthService

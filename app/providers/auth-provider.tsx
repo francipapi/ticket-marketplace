@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { ClientAuthService, AppUser, SignUpData, SignInData } from '@/lib/auth-client'
+import { SimpleAuthService, AppUser, SignUpData, SignInData } from '@/lib/auth-simple'
 
 interface AuthContextType {
   // State
@@ -29,16 +29,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch user data from our database
   const fetchUserData = useCallback(async (supabaseUser: User): Promise<AppUser | null> => {
     try {
+      console.log('Fetching user data for:', supabaseUser.id, supabaseUser.email)
+      
       const { data: appUser, error } = await supabase
         .from('users')
         .select('*')
         .eq('supabaseId', supabaseUser.id)
-        .single()
+        .maybeSingle()
 
-      if (error || !appUser) {
-        console.error('User not found in database:', supabaseUser.email, error?.message)
+      if (error) {
+        console.error('Database error fetching user:', error)
         return null
       }
+
+      if (!appUser) {
+        console.warn('User not found in database:', supabaseUser.email)
+        return null
+      }
+
+      console.log('User data fetched successfully:', appUser.username)
 
       return {
         id: appUser.id,
@@ -61,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth state...')
+        
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
@@ -72,12 +83,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
+        console.log('Session check result:', { hasSession: !!session, hasUser: !!session?.user })
+
         if (session?.user) {
+          console.log('Session found, fetching user data...')
           const userData = await fetchUserData(session.user)
           if (isMounted) {
             setUser(userData)
+            console.log('User data set:', userData ? userData.username : 'null')
           }
         } else {
+          console.log('No session found')
           if (isMounted) {
             setUser(null)
           }
@@ -89,10 +105,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } finally {
         if (isMounted) {
+          console.log('Auth initialization complete, setting loading to false')
           setLoading(false)
         }
       }
     }
+
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('Auth initialization timeout, forcing loading to false')
+        setLoading(false)
+        setUser(null)
+      }
+    }, 5000) // 5 second timeout
 
     initializeAuth()
 
@@ -101,17 +127,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!isMounted) return
 
-        console.log('Auth state change:', event)
+        console.log('Auth state change event:', event, { hasSession: !!session, hasUser: !!session?.user })
 
         try {
           if (event === 'SIGNED_IN' && session?.user) {
+            console.log('User signed in, fetching user data...')
             setLoading(true)
             const userData = await fetchUserData(session.user)
             if (isMounted) {
               setUser(userData)
               setLoading(false)
+              console.log('Auth state updated after sign in')
             }
           } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out')
             if (isMounted) {
               setUser(null)
               setLoading(false)
@@ -119,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else if (event === 'TOKEN_REFRESHED') {
             // Keep existing user data on token refresh
             console.log('Token refreshed')
+          } else {
+            console.log('Other auth event:', event)
           }
         } catch (error) {
           console.error('Error in auth state change:', error)
@@ -132,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       isMounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [fetchUserData])
@@ -140,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (data: SignInData) => {
     try {
       setLoading(true)
-      const result = await ClientAuthService.signIn(data)
+      const result = await SimpleAuthService.signIn(data)
       
       if (result.success) {
         // User state will be updated by the auth state change listener
@@ -162,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(async (data: SignUpData) => {
     try {
       setLoading(true)
-      const result = await ClientAuthService.signUp(data)
+      const result = await SimpleAuthService.signUp(data)
       
       if (result.success) {
         // User state will be updated by the auth state change listener
@@ -184,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       setLoading(true)
-      await ClientAuthService.signOut()
+      await SimpleAuthService.signOut()
       // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error)
@@ -196,7 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check username availability
   const checkUsernameAvailability = useCallback(async (username: string) => {
     try {
-      const result = await ClientAuthService.checkUsernameAvailability(username)
+      const result = await SimpleAuthService.checkUsernameAvailability(username)
       
       if (result.success) {
         return { success: true, available: result.data }

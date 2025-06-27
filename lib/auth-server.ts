@@ -1,5 +1,45 @@
-import { createClient } from '@/lib/supabase/server'
-import { User } from '@supabase/supabase-js'
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+
+// Server-side Supabase clients
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
+
+export async function createServerClient() {
+  const cookieStore = await cookies()
+  
+  return createSupabaseServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
+}
 
 // App User type that matches our database schema
 export interface AppUser {
@@ -12,14 +52,14 @@ export interface AppUser {
   migrationStatus: string
 }
 
-// Server-side auth functions
+// Server-side auth service
 export class AuthService {
   /**
-   * Get the current authenticated user (server-side)
+   * Get current user from server-side context (requires authentication)
    */
   static async getCurrentUser(): Promise<AppUser | null> {
     try {
-      const supabase = await createClient()
+      const supabase = await createServerClient()
       
       const { data: { user }, error } = await supabase.auth.getUser()
       
@@ -27,15 +67,14 @@ export class AuthService {
         return null
       }
 
-      // Get user from our database
+      // Get user record from our database
       const { data: appUser, error: dbError } = await supabase
         .from('users')
         .select('*')
         .eq('supabaseId', user.id)
-        .single()
+        .maybeSingle()
 
       if (dbError || !appUser) {
-        console.error('User exists in Supabase but not in database:', user.email, dbError?.message)
         return null
       }
 
@@ -49,13 +88,13 @@ export class AuthService {
         migrationStatus: appUser.migrationStatus
       }
     } catch (error) {
-      console.error('Auth service error:', error)
+      console.error('Error getting current user:', error)
       return null
     }
   }
 
   /**
-   * Require authentication (throws error if not authenticated)
+   * Require authentication - throws error if not authenticated
    */
   static async requireAuth(): Promise<AppUser> {
     const user = await this.getCurrentUser()
@@ -66,74 +105,4 @@ export class AuthService {
     
     return user
   }
-
-  /**
-   * Create user record in our database after Supabase signup
-   */
-  static async createUserRecord(supabaseUser: User, username: string): Promise<AppUser | null> {
-    try {
-      const supabase = await createClient()
-
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert({
-          supabaseId: supabaseUser.id,
-          email: supabaseUser.email!,
-          username: username,
-          migrationStatus: 'direct_signup'
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Failed to create user record:', error)
-        return null
-      }
-
-      // Also create profile record
-      await supabase
-        .from('profiles')
-        .insert({
-          id: supabaseUser.id,
-          username: username
-        })
-
-      return {
-        id: newUser.id,
-        supabaseId: newUser.supabaseId,
-        email: newUser.email,
-        username: newUser.username,
-        createdAt: new Date(newUser.createdAt),
-        updatedAt: new Date(newUser.updatedAt),
-        migrationStatus: newUser.migrationStatus
-      }
-    } catch (error) {
-      console.error('Error creating user record:', error)
-      return null
-    }
-  }
-
-  /**
-   * Check if username is available
-   */
-  static async isUsernameAvailable(username: string): Promise<boolean> {
-    try {
-      const supabase = await createClient()
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', username)
-        .single()
-
-      // If no error and no data, username is available
-      return !data && error?.code === 'PGRST116' // PGRST116 = no rows returned
-    } catch (error) {
-      console.error('Error checking username availability:', error)
-      return false
-    }
-  }
 }
-
-// Convenience exports
-export const { getCurrentUser, requireAuth, isUsernameAvailable } = AuthService
