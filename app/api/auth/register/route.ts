@@ -77,70 +77,91 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log('Supabase user created:', authData.user.id)
+    console.log('Supabase auth user created:', authData.user.id)
 
-    // Step 3: Create application user record
-    const { data: appUser, error: dbError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        supabaseId: authData.user.id,
-        email: authData.user.email!,
-        username: username,
-        migrationStatus: 'direct_signup'
-      })
-      .select()
-      .single()
+    // Step 3: Retrieve the application user record (created by trigger)
+    // Add a small delay to allow the trigger to complete, if necessary,
+    // though typically it should be synchronous within the same transaction.
+    // For robustness, we can poll briefly.
+    let appUser = null;
+    let attempts = 0;
+    const maxAttempts = 5;
+    const delayMs = 200;
 
-    if (dbError) {
-      console.error('Database error creating user record:', dbError)
+    while (!appUser && attempts < maxAttempts) {
+      attempts++;
+      const { data: fetchedUser, error: fetchError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('supabaseId', authData.user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: "Query returned 0 rows"
+        console.error('Error fetching user record:', fetchError);
+        // This is an unexpected error during fetch, not just "not found"
+        // Cleanup the auth user
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          console.log('Cleaned up auth user after database fetch failure');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup auth user:', cleanupError);
+        }
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to retrieve user profile after creation',
+          details: fetchError.message
+        }, { status: 500 });
+      }
       
-      // Cleanup: Delete the auth user if database insertion failed
+      if (fetchedUser) {
+        appUser = fetchedUser;
+      } else if (attempts < maxAttempts) {
+        console.log(`User record not found yet for supabaseId ${authData.user.id}, attempt ${attempts}. Retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    if (!appUser) {
+      console.error(`Failed to find user record in 'users' table for supabaseId ${authData.user.id} after ${maxAttempts} attempts.`)
+      // Cleanup: Delete the auth user if the corresponding public.users record was not created by the trigger
       try {
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-        console.log('Cleaned up auth user after database failure')
+        console.log('Cleaned up auth user as no corresponding user record was found')
       } catch (cleanupError) {
         console.error('Failed to cleanup auth user:', cleanupError)
       }
-
       return NextResponse.json({
         success: false,
-        error: 'Failed to create user profile',
-        details: dbError.message
+        error: 'User profile not created by trigger',
       }, { status: 500 })
     }
 
-    console.log('Application user record created:', appUser.id)
+    console.log('Application user record verified (created by trigger):', appUser.id)
 
-    // Step 4: Create profile record (optional)
-    try {
-      await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username: username
-        })
-      console.log('Profile record created')
-    } catch (profileError) {
-      console.warn('Profile creation failed (non-critical):', profileError)
-    }
+    // Step 4: Profile record is also handled by the trigger.
+    // We can optionally verify it here if needed, but it's less critical than the users table record.
+    // For now, we assume the trigger handles it or it's okay if it's slightly delayed.
 
-    // Step 5: Generate session for the new user (optional)
+    // Step 5: Generate session for the new user (optional, but good for UX)
+    // This part can remain as it is.
     try {
       await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
+        type: 'magiclink', // Or 'signup' if you want to send a confirmation email
         email: authData.user.email!
       })
+      console.log('Magic link generated for new user.');
     } catch (sessionError) {
+      // This is non-critical for the registration itself
       console.warn('Failed to generate session link:', sessionError)
     }
 
     return NextResponse.json({
       success: true,
       user: {
-        id: appUser.id,
-        supabaseId: appUser.supabaseId,
+        id: appUser.id, // This is public.users.id (UUID)
+        supabaseId: appUser.supabaseId, // This is auth.users.id (UUID)
         email: appUser.email,
-        username: appUser.username,
+        username: appUser.username, // This username comes from the trigger, which might have de-duplicated it
         createdAt: appUser.createdAt,
         updatedAt: appUser.updatedAt,
         migrationStatus: appUser.migrationStatus
