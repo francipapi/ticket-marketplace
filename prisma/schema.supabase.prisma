@@ -118,12 +118,5 @@ model MigrationLog {
   @@index([status])
 }
 
-// Profiles table to extend Supabase auth.users
-model Profile {
-  id        String   @id // This will be the same as auth.users.id
-  username  String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("profiles")
-}
+// Note: Profiles table removed - redundant with User table
+// All user information is now centralized in the User model

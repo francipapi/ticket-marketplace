@@ -13,14 +13,6 @@ BEGIN
     'direct_signup'
   );
   
-  -- Also create a profile record
-  INSERT INTO public.profiles (id, username)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1))
-  )
-  ON CONFLICT (id) DO NOTHING;
-  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -34,4 +26,3 @@ CREATE TRIGGER on_auth_user_created
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
 GRANT ALL ON public.users TO postgres, anon, authenticated, service_role;
-GRANT ALL ON public.profiles TO postgres, anon, authenticated, service_role;

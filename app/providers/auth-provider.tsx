@@ -38,7 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.error('Database error fetching user:', error)
+        console.error('Database error fetching user:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
         return null
       }
 
@@ -68,6 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
+    // Add global error handler for unhandled Supabase errors
+    const handleUnhandledError = (event: ErrorEvent) => {
+      const error = event.error
+      if (error?.message?.includes('AuthRetryableFetchError') ||
+          error?.message?.includes('Load failed') ||
+          error?.message?.includes('Fetch is aborted')) {
+        console.warn('Caught unhandled Supabase error (suppressing):', error.message)
+        event.preventDefault() // Prevent error from propagating
+      }
+    }
+
+    window.addEventListener('error', handleUnhandledError)
+
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth state...')
@@ -75,7 +93,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('Auth session error:', error)
+          // Handle various auth errors gracefully
+          if (error.message?.includes('refresh_token_not_found') || 
+              error.message?.includes('Invalid Refresh Token') ||
+              error.message?.includes('Load failed') ||
+              error.message?.includes('AuthRetryableFetchError') ||
+              error.message?.includes('Fetch is aborted')) {
+            console.log('Auth connectivity error - clearing session and continuing')
+            try {
+              await supabase.auth.signOut({ scope: 'local' })
+            } catch (signOutError) {
+              console.log('Error during signout, continuing anyway')
+            }
+          } else {
+            console.error('Auth session error:', error)
+          }
           if (isMounted) {
             setUser(null)
             setLoading(false)
@@ -148,11 +180,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else if (event === 'TOKEN_REFRESHED') {
             // Keep existing user data on token refresh
             console.log('Token refreshed')
+          } else if (event === 'USER_UPDATED') {
+            console.log('User updated event')
           } else {
             console.log('Other auth event:', event)
           }
         } catch (error) {
           console.error('Error in auth state change:', error)
+          // Handle various auth errors in auth state changes
+          if (error instanceof Error && 
+              (error.message?.includes('refresh_token_not_found') || 
+               error.message?.includes('Invalid Refresh Token') ||
+               error.message?.includes('Load failed') ||
+               error.message?.includes('AuthRetryableFetchError') ||
+               error.message?.includes('Fetch is aborted'))) {
+            console.log('Auth connectivity error in state change - clearing session')
+            try {
+              await supabase.auth.signOut({ scope: 'local' })
+            } catch (signOutError) {
+              console.log('Error during signout in state change, continuing anyway')
+            }
+          }
           if (isMounted) {
             setUser(null)
             setLoading(false)
@@ -165,6 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
+      window.removeEventListener('error', handleUnhandledError)
     }
   }, [fetchUserData])
 

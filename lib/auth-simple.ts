@@ -32,82 +32,70 @@ export interface SignInData {
 // Simplified auth service that relies on database triggers
 export class SimpleAuthService {
   /**
-   * Sign up a new user using direct Supabase auth + database triggers
+   * Sign up a new user using server-side registration API
    */
   static async signUp({ email, password, username }: SignUpData): Promise<AuthResult<AppUser>> {
     try {
-      console.log('Starting simple signup process for:', { email, username })
+      console.log('Starting server-side signup process for:', { email, username })
       
-      // Basic validation
-      if (!username || username.length < 3) {
-        return { success: false, error: 'Username must be at least 3 characters long' }
+      // Call our server-side registration endpoint
+      let response
+      try {
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ email, password, username }),
+        })
+      } catch (fetchError) {
+        console.error('Network error during registration:', fetchError)
+        return { success: false, error: 'Network error - please check your connection' }
       }
 
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        return { success: false, error: 'Username can only contain letters, numbers, and underscores' }
-      }
+      console.log('Registration response status:', response.status, response.statusText)
 
-      // Check if username is already taken
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', username)
-        .maybeSingle()
-
-      if (existingUser) {
-        return { success: false, error: 'Username is already taken' }
-      }
-
-      // Sign up with Supabase Auth - the database trigger will handle user record creation
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username
-          }
+      let result
+      try {
+        const responseText = await response.text()
+        console.log('Raw response text:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''))
+        
+        if (!responseText) {
+          console.error('Empty response from server')
+          return { success: false, error: 'Empty response from server' }
         }
-      })
-
-      if (error) {
-        console.error('Supabase signup error:', error)
-        return { success: false, error: error.message }
+        
+        result = JSON.parse(responseText)
+        console.log('Parsed response:', result)
+      } catch (parseError) {
+        console.error('Failed to parse registration response:', parseError)
+        return { success: false, error: 'Server response error' }
       }
 
-      if (!data.user) {
-        return { success: false, error: 'Failed to create user account' }
+      if (!response.ok) {
+        console.error('Server-side registration failed:', { status: response.status, result })
+        return { success: false, error: result?.error || result?.message || 'Registration failed' }
       }
 
-      console.log('Supabase user created:', data.user.id)
+      if (!result.success) {
+        return { success: false, error: result.error }
+      }
 
-      // Wait a moment for the database trigger to create the user record
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('Server-side registration successful:', result.user.id)
 
-      // Fetch the created user record
-      const { data: appUser, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('supabaseId', data.user.id)
-        .single()
-
-      if (fetchError || !appUser) {
-        console.error('Failed to fetch created user record:', fetchError)
+      // Now sign in the user to create a session
+      const signInResult = await this.signIn({ email, password })
+      
+      if (signInResult.success) {
+        return { success: true, data: signInResult.data }
+      } else {
+        // Registration succeeded but sign-in failed - user exists but can't log in
+        console.warn('Registration succeeded but auto sign-in failed:', signInResult.error)
         return { 
-          success: false, 
-          error: 'Account created but user profile not found. Please try logging in.' 
-        }
-      }
-
-      return {
-        success: true,
-        data: {
-          id: appUser.id,
-          supabaseId: appUser.supabaseId,
-          email: appUser.email,
-          username: appUser.username,
-          createdAt: new Date(appUser.createdAt),
-          updatedAt: new Date(appUser.updatedAt),
-          migrationStatus: appUser.migrationStatus
+          success: true, 
+          data: result.user,
+          error: 'Account created successfully. Please try logging in.'
         }
       }
 
@@ -122,12 +110,15 @@ export class SimpleAuthService {
    */
   static async signIn({ email, password }: SignInData): Promise<AuthResult<AppUser>> {
     try {
+      console.log('Attempting sign in for:', email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
 
       if (error) {
+        console.error('Sign in error:', error)
         return { success: false, error: error.message }
       }
 
@@ -136,6 +127,8 @@ export class SimpleAuthService {
       }
 
       // Get user record from our database
+      console.log('Fetching user profile for supabaseId:', data.user.id)
+      
       const { data: appUser, error: dbError } = await supabase
         .from('users')
         .select('*')
@@ -143,8 +136,11 @@ export class SimpleAuthService {
         .single()
 
       if (dbError || !appUser) {
+        console.error('User profile fetch error:', dbError)
         return { success: false, error: 'User profile not found' }
       }
+
+      console.log('User profile found:', appUser.username)
 
       return {
         success: true,
