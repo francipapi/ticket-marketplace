@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/app/providers';
+import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { 
@@ -50,7 +50,7 @@ export default function ListingDetailsPage() {
 
   const fetchListing = useCallback(async () => {
     try {
-      const response = await fetch(`/api/listings/supabase/${params.id}`);
+      const response = await fetch(`/api/listings/airtable/${params.id}`);
       const result = await response.json();
 
       // Handle both old and new response formats

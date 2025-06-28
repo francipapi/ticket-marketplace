@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/providers';
+import { useAuth } from '@/hooks/use-auth';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import { Upload, X, FileText, Image as ImageIcon, Calendar, MapPin, DollarSign } from 'lucide-react';
@@ -36,7 +36,7 @@ export default function CreateListingPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth/login');
+      router.push('/sign-in');
     }
   }, [user, loading, router]);
 
@@ -90,6 +90,30 @@ export default function CreateListingPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const debugAuth = async () => {
+    try {
+      const response = await fetch('/api/debug/auth');
+      const data = await response.json();
+      console.log('Auth Debug Info:', data);
+      toast.success('Check console for auth debug info');
+    } catch (error) {
+      console.error('Debug error:', error);
+      toast.error('Failed to debug auth');
+    }
+  };
+
+  const testHealth = async () => {
+    try {
+      const response = await fetch('/api/test/health');
+      const data = await response.json();
+      console.log('Health Check:', data);
+      toast.success('Check console for health check info');
+    } catch (error) {
+      console.error('Health check error:', error);
+      toast.error('Failed to run health check');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -129,7 +153,7 @@ export default function CreateListingPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/listings/supabase', {
+      const response = await fetch('/api/listings/airtable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,12 +168,19 @@ export default function CreateListingPage() {
       });
 
       const result = await response.json();
+      
+      console.log('Create listing response:', {
+        status: response.status,
+        ok: response.ok,
+        result
+      });
 
       if (response.ok && (result.success || result.listing)) {
         toast.success('Listing created successfully!');
         const listing = result.success ? result.data.listing : result.listing;
         router.push(`/listings/${listing.id}`);
       } else {
+        console.error('Failed to create listing:', result);
         toast.error(result.error || 'Failed to create listing');
       }
     } catch (error) {
@@ -188,6 +219,27 @@ export default function CreateListingPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Debug Button - Remove after fixing */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 mb-2">Debug: Click buttons to check system state</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={debugAuth}
+              className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+            >
+              Debug Auth State
+            </button>
+            <button
+              type="button"
+              onClick={testHealth}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Health Check
+            </button>
+          </div>
+        </div>
+
         {/* Basic Information */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Basic Information</h2>

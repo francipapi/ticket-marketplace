@@ -1,15 +1,13 @@
 'use client';
 
-import AuthProvider, { useAuth } from './providers/auth-provider';
+// Since we're using Clerk, we don't need a custom auth provider
+// Clerk Provider is already in the root layout
 
-// Simple providers wrapper
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  );
+// Re-export a dummy hook for compatibility
+export function useAuth() {
+  return {
+    user: null,
+    loading: false,
+    signOut: () => Promise.resolve(),
+  };
 }
-
-// Re-export useAuth for convenience
-export { useAuth };
