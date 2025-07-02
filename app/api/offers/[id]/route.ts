@@ -118,5 +118,3 @@ export async function PUT(
     );
   }
 }
-
-// DELETE function removed - now handled by supabase routes

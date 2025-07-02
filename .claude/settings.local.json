@@ -18,11 +18,6 @@
       "Bash(rg:*)",
       "Bash(pkill:*)",
       "Bash(mv:*)",
-      "Bash(for file in lib/supabase-server.ts lib/storage-supabase.ts lib/auth-server.ts lib/auth-client.ts)",
-      "Bash(do mv \"$file\" \"$file.bak\")",
-      "Bash(done)",
-      "Bash(for page in app/test-auth app/test-login app/simple-test app/simple-dashboard)",
-      "Bash(do [ -d \"$page\" ])",
       "Bash(cp:*)"
     ],
     "deny": []

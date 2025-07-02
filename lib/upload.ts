@@ -104,31 +104,6 @@ export class FileService {
       return false;
     }
   }
-  
-  // Migration helper - prepare file paths for Supabase
-  async prepareForMigration(): Promise<Array<{localPath: string, supabasePath: string}>> {
-    const mappings = [];
-    try {
-      const uploadsDir = path.join(process.cwd(), this.uploadDir);
-      const users = await fs.readdir(uploadsDir);
-      
-      for (const userId of users) {
-        const userDir = path.join(uploadsDir, userId);
-        const files = await fs.readdir(userDir);
-        
-        for (const fileName of files) {
-          mappings.push({
-            localPath: path.join('public/uploads', userId, fileName),
-            supabasePath: `tickets/${userId}/${fileName}`,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error preparing migration mappings:', error);
-    }
-    
-    return mappings;
-  }
 }
 
 export const fileService = new FileService();

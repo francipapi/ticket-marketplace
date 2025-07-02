@@ -17,12 +17,12 @@ model User {
   id              String   @id @default(cuid()) // cuid works in both SQLite & PostgreSQL
   email           String   @unique
   username        String   @unique
-  passwordHash    String   // Will be migrated to Supabase differently
+  passwordHash    String   // Legacy field for old auth system
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   // Migration metadata
-  migrationId     String?  // Supabase user ID after migration
+  migrationId     String?  // ID for migration tracking
   migrationStatus String   @default("pending") // pending, migrated, failed
   
   listings        Listing[]
@@ -44,7 +44,7 @@ model Listing {
   description String?
   
   // File handling - migration ready
-  ticketPath      String?    // local: uploads/123/file.pdf -> supabase: tickets/uuid/file.pdf
+  ticketPath      String?    // Path to uploaded ticket file
   originalFileName String?
   fileType        String?
   fileSize        Int?
@@ -54,7 +54,7 @@ model Listing {
   updatedAt   DateTime @updatedAt
   
   // Migration metadata
-  migrationId String?  // Supabase listing ID after migration
+  migrationId String?  // ID for migration tracking
   
   offers      Offer[]
   

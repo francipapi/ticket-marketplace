@@ -58,7 +58,7 @@ Please include as much information as possible:
 
 For production deployment, consider:
 - PostgreSQL database with proper access controls
-- Cloud storage (Supabase Storage) with CDN
+- Cloud storage with CDN
 - Real payment processing (Stripe) with PCI compliance
 - Enhanced rate limiting and monitoring
 - HTTPS enforcement

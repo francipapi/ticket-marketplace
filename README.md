@@ -80,8 +80,8 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instruction
 - **Payments**: Mock system
 
 ### Phase 1 (Migration Ready)
-- **Backend**: Supabase (PostgreSQL + Auth)
-- **Storage**: Supabase Storage
+- **Backend**: Airtable + Clerk Auth
+- **Storage**: Local File Storage
 - **Payments**: Stripe integration
 - **Deployment**: Vercel
 
@@ -132,8 +132,8 @@ The app is migration-ready for PostgreSQL databases.
 This Phase 0 prototype is designed for easy migration to production:
 
 1. **Database**: SQLite → PostgreSQL (schema compatible)
-2. **Auth**: JWT → Supabase Auth
-3. **Storage**: Local → Supabase Storage
+2. **Auth**: JWT → Clerk Auth
+3. **Storage**: Local File Storage
 4. **Payments**: Mock → Stripe
 
 See [docs/MIGRATION.md](./docs/MIGRATION.md) for detailed migration guide.
