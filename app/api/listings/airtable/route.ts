@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getAuth } from '@clerk/nextjs/server';
 import { db, handleDatabaseError } from '@/services/database.service';
 import { createListingSchema } from '@/lib/validations';
 import { z } from 'zod';
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 // POST /api/listings/airtable - Create new listing
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = getAuth(request);
     
     if (!userId) {
       return NextResponse.json(

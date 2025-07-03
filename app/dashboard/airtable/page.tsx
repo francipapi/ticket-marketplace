@@ -33,12 +33,19 @@ export default function AirtableDashboard() {
   const [sentOffers, setSentOffers] = useState<Offer[]>([]);
   const [receivedOffers, setReceivedOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       fetchDashboardData();
+    } else if (!authLoading && !user && retryCount < 3) {
+      // If auth is loaded but no user, retry after a delay
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, authLoading, retryCount]);
 
   const fetchDashboardData = async () => {
     try {
@@ -47,6 +54,10 @@ export default function AirtableDashboard() {
       if (listingsRes.ok) {
         const data = await listingsRes.json();
         setListings(data.listings || []);
+      } else if (listingsRes.status === 404) {
+        console.log('User not found in Airtable, might need sync');
+      } else if (listingsRes.status === 401) {
+        console.error('Unauthorized access to listings');
       }
 
       // Fetch sent offers
@@ -54,6 +65,10 @@ export default function AirtableDashboard() {
       if (sentRes.ok) {
         const data = await sentRes.json();
         setSentOffers(data.offers || []);
+      } else if (sentRes.status === 404) {
+        console.log('User not found for sent offers');
+      } else if (sentRes.status === 401) {
+        console.error('Unauthorized access to sent offers');
       }
 
       // Fetch received offers
@@ -61,6 +76,10 @@ export default function AirtableDashboard() {
       if (receivedRes.ok) {
         const data = await receivedRes.json();
         setReceivedOffers(data.offers || []);
+      } else if (receivedRes.status === 404) {
+        console.log('User not found for received offers');
+      } else if (receivedRes.status === 401) {
+        console.error('Unauthorized access to received offers');
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

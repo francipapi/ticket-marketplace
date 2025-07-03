@@ -92,7 +92,10 @@ export default function CreateListingPage() {
 
   const debugAuth = async () => {
     try {
-      const response = await fetch('/api/debug/auth');
+      const response = await fetch('/api/debug/sync-user');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       console.log('Auth Debug Info:', data);
       toast.success('Check console for auth debug info');

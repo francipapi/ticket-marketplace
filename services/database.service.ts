@@ -171,8 +171,8 @@ export class DatabaseService {
 
       const records = await tables.listings
         .select({
-          filterByFormula,
-          sort: [{ field: 'createdAt', direction: 'desc' }],
+          filterByFormula: filterFormula,
+          sort: [{ field: 'eventDate', direction: 'desc' }],
           pageSize: limit,
         })
         .firstPage();
@@ -258,7 +258,7 @@ export class DatabaseService {
       const records = await tables.offers
         .select({
           filterByFormula: `SEARCH('${listingId}', ARRAYJOIN({listing}))`,
-          sort: [{ field: 'createdAt', direction: 'desc' }],
+          // Remove sort since createdAt field doesn't exist in Airtable
         })
         .all();
       
@@ -272,7 +272,7 @@ export class DatabaseService {
       const records = await tables.offers
         .select({
           filterByFormula: `SEARCH('${buyerId}', ARRAYJOIN({buyer}))`,
-          sort: [{ field: 'createdAt', direction: 'desc' }],
+          // Remove sort since createdAt field doesn't exist in Airtable
         })
         .all();
       

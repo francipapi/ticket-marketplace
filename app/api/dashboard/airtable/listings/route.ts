@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, getAuth } from '@clerk/nextjs/server';
 import { db, handleDatabaseError } from '@/services/database.service';
 import { getTables, recordToObject } from '@/lib/airtable';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth();
+    // Use getAuth with request for App Router
+    const { userId } = getAuth(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const records = await tables.listings
       .select({
         filterByFormula: `SEARCH('${user.id}', ARRAYJOIN({seller}))`,
-        sort: [{ field: 'createdAt', direction: 'desc' }],
+        sort: [{ field: 'eventDate', direction: 'desc' }],
       })
       .all();
     

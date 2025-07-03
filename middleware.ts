@@ -6,16 +6,18 @@ const isProtectedRoute = createRouteMatcher([
   '/listings/create(.*)',
   '/listings/edit(.*)',
   '/offers(.*)',
+  '/api/dashboard(.*)',
   '/api/listings(.*)',
   '/api/offers(.*)',
   '/api/upload(.*)',
   '/api/payments(.*)',
+  '/api/user/sync',
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware(({ protect }, req) => {
   // Protect routes that require authentication
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    protect();
   }
 });
 

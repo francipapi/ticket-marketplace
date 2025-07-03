@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getAuth } from '@clerk/nextjs/server';
 import { db, handleDatabaseError } from '@/services/database.service';
 import { updateListingSchema } from '@/lib/validations';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
+    const { userId } = getAuth(request);
     
     if (!userId) {
       return NextResponse.json(
@@ -121,7 +121,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
+    const { userId } = getAuth(request);
     
     if (!userId) {
       return NextResponse.json(
