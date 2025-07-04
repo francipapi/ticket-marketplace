@@ -51,14 +51,28 @@ export default function ListingDetailsPage() {
   const fetchListing = useCallback(async () => {
     try {
       const response = await fetch(`/api/listings/airtable/${params.id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast.error('Listing not found');
+        } else {
+          toast.error('Failed to load listing');
+        }
+        router.push('/listings');
+        return;
+      }
+      
       const result = await response.json();
-
-      // Handle both old and new response formats
-      const listing = result.success ? result.data.listing : result.listing;
-      if (listing) {
+      
+      // Handle different response formats
+      const listing = result.success ? result.data?.listing || result.data : result;
+      
+      if (listing && listing.id) {
+        console.log('Fetched listing:', listing); // Debug log
         setListing(listing);
       } else {
-        toast.error('Listing not found');
+        console.error('Invalid listing data:', result);
+        toast.error('Invalid listing data');
         router.push('/listings');
       }
     } catch (error) {
@@ -307,6 +321,19 @@ function OfferModal({
   const [quantity, setQuantity] = useState<number>(1);
   const [customMessage, setCustomMessage] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  
+  const getMessageFromTemplate = (template: string) => {
+    switch (template) {
+      case 'asking_price':
+        return 'Buy at asking price';
+      case 'make_offer':
+        return 'Make offer';
+      case 'check_availability':
+        return 'Check availability';
+      default:
+        return 'Buy at asking price';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,24 +352,27 @@ function OfferModal({
         offerPrice = Math.round(priceInDollars * 100);
       }
 
-      const response = await fetch('/api/offers', {
+      const response = await fetch('/api/offers/airtable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           listingId: listing.id,
-          offerPriceInCents: offerPrice,
+          offerPrice: offerPrice, // Note: using offerPrice not offerPriceInCents for Airtable
           quantity,
-          messageTemplate,
+          message: getMessageFromTemplate(messageTemplate),
           customMessage: messageTemplate === 'make_offer' ? customMessage : undefined,
         }),
       });
 
       const result = await response.json();
+      
+      console.log('Offer response:', { status: response.status, result }); // Debug log
 
-      if (response.ok && (result.success || result.offer)) {
+      if (response.ok && (result.success || result.id)) {
         toast.success('Offer sent successfully!');
         onSuccess();
       } else {
+        console.error('Offer failed:', result);
         toast.error(result.error || 'Failed to send offer');
       }
     } catch (error) {
@@ -445,14 +475,14 @@ function OfferModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
             >
               {loading ? 'Sending...' : 'Send Offer'}
             </button>

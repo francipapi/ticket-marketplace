@@ -164,7 +164,7 @@ export default function CreateListingPage() {
           eventName: formData.eventName.trim(),
           eventDate: new Date(formData.eventDate).toISOString(),
           venue: formData.venue.trim() || undefined,
-          priceInCents: Math.round(price * 100), // Convert to cents
+          price: Math.round(price * 100), // Convert to cents
           quantity,
           description: formData.description.trim() || undefined,
         }),
@@ -178,10 +178,9 @@ export default function CreateListingPage() {
         result
       });
 
-      if (response.ok && (result.success || result.listing)) {
+      if (response.ok && result.id) {
         toast.success('Listing created successfully!');
-        const listing = result.success ? result.data.listing : result.listing;
-        router.push(`/listings/${listing.id}`);
+        router.push(`/listings/${result.id}`);
       } else {
         console.error('Failed to create listing:', result);
         toast.error(result.error || 'Failed to create listing');
@@ -390,7 +389,7 @@ export default function CreateListingPage() {
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               isDragActive
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-100'
             }`}
           >
             <input {...getInputProps()} />
@@ -456,14 +455,14 @@ export default function CreateListingPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 py-3 px-4 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="flex-1 py-3 px-4 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <div className="flex items-center justify-center">

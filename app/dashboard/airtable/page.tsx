@@ -25,6 +25,12 @@ interface Offer {
   message: string;
   listing?: string[];
   createdAt: string;
+  listingInfo?: {
+    id: string;
+    title: string;
+    eventName: string;
+    eventDate: string;
+  };
 }
 
 export default function AirtableDashboard() {
@@ -49,37 +55,102 @@ export default function AirtableDashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('Fetching dashboard data...');
+      
       // Fetch user's listings
       const listingsRes = await fetch('/api/dashboard/airtable/listings');
+      console.log('Listings response status:', listingsRes.status);
+      
       if (listingsRes.ok) {
         const data = await listingsRes.json();
-        setListings(data.listings || []);
-      } else if (listingsRes.status === 404) {
-        console.log('User not found in Airtable, might need sync');
-      } else if (listingsRes.status === 401) {
-        console.error('Unauthorized access to listings');
+        console.log('Listings data received:', data);
+        
+        // Transform the data to match the expected interface
+        const transformedListings = (data.listings || []).map((listing: any) => ({
+          id: listing.id,
+          title: listing.title,
+          eventName: listing.eventName,
+          eventDate: listing.eventDate,
+          price: listing.price, // Airtable price is already in cents
+          quantity: listing.quantity,
+          status: listing.status,
+          views: listing.views || 0,
+        }));
+        
+        console.log('Transformed listings:', transformedListings);
+        setListings(transformedListings);
+      } else {
+        const errorData = await listingsRes.json();
+        console.error('Listings error:', listingsRes.status, errorData);
+        if (listingsRes.status === 404) {
+          console.log('User not found in Airtable, might need sync');
+        } else if (listingsRes.status === 401) {
+          console.error('Unauthorized access to listings');
+        }
       }
 
       // Fetch sent offers
       const sentRes = await fetch('/api/dashboard/airtable/offers/sent');
+      console.log('Sent offers response status:', sentRes.status);
+      
       if (sentRes.ok) {
         const data = await sentRes.json();
-        setSentOffers(data.offers || []);
-      } else if (sentRes.status === 404) {
-        console.log('User not found for sent offers');
-      } else if (sentRes.status === 401) {
-        console.error('Unauthorized access to sent offers');
+        console.log('Sent offers data received:', data);
+        
+        // Transform the data to match the expected interface
+        const transformedSentOffers = (data.offers || []).map((offer: any) => ({
+          id: offer.id,
+          offerPrice: offer.offerPrice,
+          quantity: offer.quantity,
+          status: offer.status,
+          message: offer.message,
+          listing: offer.listing,
+          createdAt: offer.createdAt,
+          listingInfo: offer.listingInfo,
+        }));
+        
+        console.log('Transformed sent offers:', transformedSentOffers);
+        setSentOffers(transformedSentOffers);
+      } else {
+        const errorData = await sentRes.json();
+        console.error('Sent offers error:', sentRes.status, errorData);
+        if (sentRes.status === 404) {
+          console.log('User not found for sent offers');
+        } else if (sentRes.status === 401) {
+          console.error('Unauthorized access to sent offers');
+        }
       }
 
       // Fetch received offers
       const receivedRes = await fetch('/api/dashboard/airtable/offers/received');
+      console.log('Received offers response status:', receivedRes.status);
+      
       if (receivedRes.ok) {
         const data = await receivedRes.json();
-        setReceivedOffers(data.offers || []);
-      } else if (receivedRes.status === 404) {
-        console.log('User not found for received offers');
-      } else if (receivedRes.status === 401) {
-        console.error('Unauthorized access to received offers');
+        console.log('Received offers data received:', data);
+        
+        // Transform the data to match the expected interface
+        const transformedReceivedOffers = (data.offers || []).map((offer: any) => ({
+          id: offer.id,
+          offerPrice: offer.offerPrice,
+          quantity: offer.quantity,
+          status: offer.status,
+          message: offer.message,
+          listing: offer.listing,
+          createdAt: offer.createdAt,
+          listingInfo: offer.listingInfo,
+        }));
+        
+        console.log('Transformed received offers:', transformedReceivedOffers);
+        setReceivedOffers(transformedReceivedOffers);
+      } else {
+        const errorData = await receivedRes.json();
+        console.error('Received offers error:', receivedRes.status, errorData);
+        if (receivedRes.status === 404) {
+          console.log('User not found for received offers');
+        } else if (receivedRes.status === 401) {
+          console.error('Unauthorized access to received offers');
+        }
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -106,6 +177,50 @@ export default function AirtableDashboard() {
     } catch (error) {
       console.error('Error deleting listing:', error);
       toast.error('Failed to delete listing');
+    }
+  };
+
+  const handleAcceptOffer = async (offerId: string) => {
+    if (!confirm('Are you sure you want to accept this offer? This will decline all other pending offers for this listing.')) return;
+
+    try {
+      const res = await fetch(`/api/offers/${offerId}/accept`, {
+        method: 'POST',
+      });
+
+      if (res.ok) {
+        toast.success('Offer accepted successfully');
+        // Refresh dashboard data
+        await fetchDashboardData();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || 'Failed to accept offer');
+      }
+    } catch (error) {
+      console.error('Error accepting offer:', error);
+      toast.error('Failed to accept offer');
+    }
+  };
+
+  const handleDeclineOffer = async (offerId: string) => {
+    if (!confirm('Are you sure you want to decline this offer?')) return;
+
+    try {
+      const res = await fetch(`/api/offers/${offerId}/decline`, {
+        method: 'POST',
+      });
+
+      if (res.ok) {
+        toast.success('Offer declined successfully');
+        // Refresh dashboard data
+        await fetchDashboardData();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || 'Failed to decline offer');
+      }
+    } catch (error) {
+      console.error('Error declining offer:', error);
+      toast.error('Failed to decline offer');
     }
   };
 
@@ -195,24 +310,24 @@ export default function AirtableDashboard() {
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Views
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -236,7 +351,7 @@ export default function AirtableDashboard() {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         listing.status === 'ACTIVE' 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                          : 'bg-gray-200 text-gray-900'
                       }`}>
                         {listing.status}
                       </span>
@@ -266,6 +381,173 @@ export default function AirtableDashboard() {
                       >
                         <Trash2 className="inline h-4 w-4" />
                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Offers Sent */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Offers Sent</h2>
+        {sentOffers.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">You haven't sent any offers yet</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Event
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Offer Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Quantity
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Message
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sentOffers.map((offer) => (
+                  <tr key={offer.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {offer.listingInfo?.title || 'Event information not available'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {offer.listingInfo?.eventName || 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ${(offer.offerPrice / 100).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {offer.quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        offer.status === 'PENDING' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : offer.status === 'ACCEPTED'
+                          ? 'bg-green-100 text-green-800'
+                          : offer.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {offer.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {offer.message}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Offers Received */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Offers Received</h2>
+        {receivedOffers.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">You haven't received any offers yet</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Event
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Offer Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Quantity
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Message
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {receivedOffers.map((offer) => (
+                  <tr key={offer.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {offer.listingInfo?.title || 'Event information not available'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {offer.listingInfo?.eventName || 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ${(offer.offerPrice / 100).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {offer.quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        offer.status === 'PENDING' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : offer.status === 'ACCEPTED'
+                          ? 'bg-green-100 text-green-800'
+                          : offer.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {offer.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {offer.message}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {offer.status === 'PENDING' && (
+                        <>
+                          <button
+                            onClick={() => handleAcceptOffer(offer.id)}
+                            className="text-green-600 hover:text-green-900 mr-3"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleDeclineOffer(offer.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Decline
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

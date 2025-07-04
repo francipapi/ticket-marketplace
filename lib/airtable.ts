@@ -43,7 +43,9 @@ export interface ListingRecord extends FieldSet {
   price: number; // in cents
   quantity: number;
   status: 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DELISTED';
-  seller: string[]; // Array of record IDs linking to Users
+  seller?: string[]; // Array of record IDs linking to Users (optional in case field is misconfigured)
+  sellerId?: string; // Alternative field name
+  userId?: string; // Alternative field name
   venue?: string;
   description?: string;
   ticketFiles?: Array<{
@@ -105,12 +107,12 @@ export function getTables() {
 // Helper to convert Airtable record to plain object
 export function recordToObject<T extends FieldSet>(
   record: Airtable.Record<T>
-): T & { id: string; createdAt?: string } {
+): T & { id: string; createdAt: string } {
   return {
     id: record.id,
     ...record.fields,
-    createdAt: record._rawJson?.createdTime,
-  } as T & { id: string; createdAt?: string };
+    createdAt: record._rawJson?.createdTime || new Date().toISOString(),
+  } as T & { id: string; createdAt: string };
 }
 
 // Helper to handle Airtable errors
