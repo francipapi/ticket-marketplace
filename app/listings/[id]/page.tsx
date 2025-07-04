@@ -165,7 +165,7 @@ export default function ListingDetailsPage() {
         </Link>
         
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{listing.title}</h1>
-        <p className="text-xl text-gray-600">{listing.eventName}</p>
+        <p className="text-xl text-gray-900">{listing.eventName}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -176,27 +176,27 @@ export default function ListingDetailsPage() {
             <h2 className="text-xl font-semibold mb-4">Event Details</h2>
             
             <div className="space-y-3">
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-900">
                 <Calendar className="h-5 w-5 mr-3" />
                 <span>{formatDate(listing.eventDate)}</span>
               </div>
               
               {listing.venue && (
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-900">
                   <MapPin className="h-5 w-5 mr-3" />
                   <span>{listing.venue}</span>
                 </div>
               )}
               
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-900">
                 <User className="h-5 w-5 mr-3" />
                 <span>Sold by {listing.user.username}</span>
-                <span className="ml-2 text-sm text-gray-500">
+                <span className="ml-2 text-sm text-gray-900">
                   (Member since {formatRelativeDate(listing.user.createdAt)})
                 </span>
               </div>
               
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-900">
                 <Clock className="h-5 w-5 mr-3" />
                 <span>Listed {formatRelativeDate(listing.createdAt)}</span>
               </div>
@@ -205,7 +205,7 @@ export default function ListingDetailsPage() {
             {listing.description && (
               <div className="mt-6">
                 <h3 className="font-medium mb-2">Description</h3>
-                <p className="text-gray-600 whitespace-pre-wrap">{listing.description}</p>
+                <p className="text-gray-900 whitespace-pre-wrap">{listing.description}</p>
               </div>
             )}
           </div>
@@ -219,14 +219,14 @@ export default function ListingDetailsPage() {
                   <div key={offer.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                     <div>
                       <span className="font-medium">{offer.buyer.username}</span>
-                      <span className="text-gray-500 ml-2">
+                      <span className="text-gray-900 ml-2">
                         offered {formatPrice(offer.offerPriceInCents)}
                       </span>
                       {offer.quantity > 1 && (
-                        <span className="text-gray-500"> for {offer.quantity} tickets</span>
+                        <span className="text-gray-900"> for {offer.quantity} tickets</span>
                       )}
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-900">
                       {formatRelativeDate(offer.createdAt)}
                     </span>
                   </div>
@@ -245,7 +245,7 @@ export default function ListingDetailsPage() {
                   {formatPrice(listing.priceInCents)}
                 </span>
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 {listing.quantity} {listing.quantity === 1 ? 'ticket' : 'tickets'} available
               </p>
             </div>
@@ -281,7 +281,7 @@ export default function ListingDetailsPage() {
             )}
 
             <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-900">
                 <p>✓ Secure payment processing</p>
                 <p>✓ Instant ticket delivery</p>
                 <p>✓ Fraud protection</p>
@@ -429,7 +429,7 @@ function OfferModal({
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-900 mt-1">
                   Asking price: {formatPrice(listing.priceInCents)}
                 </p>
               </div>

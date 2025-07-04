@@ -88,14 +88,14 @@ export default function ListingsPage() {
         {/* Search Bar */}
         <div className="relative max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+            <Search className="h-5 w-5 text-gray-700" />
           </div>
           <input
             type="text"
             placeholder="Search events, artists, venues..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-700 focus:outline-none focus:placeholder-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
       </div>
@@ -115,9 +115,9 @@ export default function ListingsPage() {
         </div>
       ) : listings.length === 0 ? (
         <div className="text-center py-12">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+          <Calendar className="mx-auto h-12 w-12 text-gray-700" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-900">
             {search ? 'Try adjusting your search terms' : 'Be the first to list tickets!'}
           </p>
           <div className="mt-6">
@@ -148,17 +148,17 @@ export default function ListingsPage() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-900">
                     <Calendar className="h-4 w-4 mr-2" />
                     {formatDate(listing.eventDate)}
                   </div>
                   {listing.venue && (
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-gray-900">
                       <MapPin className="h-4 w-4 mr-2" />
                       {listing.venue}
                     </div>
                   )}
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-900">
                     <User className="h-4 w-4 mr-2" />
                     {listing.user.username}
                   </div>
@@ -171,7 +171,7 @@ export default function ListingsPage() {
                     </span>
                   </div>
                   {((listing._count?.offers || listing.offers?.length || 0) > 0) && (
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-900">
                       {listing._count?.offers || listing.offers?.length || 0} offer{(listing._count?.offers || listing.offers?.length || 0) !== 1 ? 's' : ''}
                     </span>
                   )}

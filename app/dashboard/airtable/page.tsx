@@ -235,7 +235,7 @@ export default function AirtableDashboard() {
   if (!user) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">Please sign in to view your dashboard</p>
+        <p className="text-gray-900 mb-4">Please sign in to view your dashboard</p>
         <Link href="/sign-in" className="text-blue-600 hover:underline">
           Sign In
         </Link>
@@ -247,7 +247,7 @@ export default function AirtableDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back, {user.username}!</p>
+        <p className="text-gray-900 mt-2">Welcome back, {user.username}!</p>
       </div>
 
       {/* Stats Overview */}
@@ -256,7 +256,7 @@ export default function AirtableDashboard() {
           <div className="flex items-center">
             <Package className="h-10 w-10 text-blue-600 mr-4" />
             <div>
-              <p className="text-sm text-gray-600">Active Listings</p>
+              <p className="text-sm text-gray-900">Active Listings</p>
               <p className="text-2xl font-bold">{listings.filter(l => l.status === 'ACTIVE').length}</p>
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function AirtableDashboard() {
           <div className="flex items-center">
             <Tag className="h-10 w-10 text-green-600 mr-4" />
             <div>
-              <p className="text-sm text-gray-600">Offers Received</p>
+              <p className="text-sm text-gray-900">Offers Received</p>
               <p className="text-2xl font-bold">{receivedOffers.length}</p>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function AirtableDashboard() {
           <div className="flex items-center">
             <ShoppingBag className="h-10 w-10 text-purple-600 mr-4" />
             <div>
-              <p className="text-sm text-gray-600">Offers Sent</p>
+              <p className="text-sm text-gray-900">Offers Sent</p>
               <p className="text-2xl font-bold">{sentOffers.length}</p>
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function AirtableDashboard() {
       {/* My Listings */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">My Listings</h2>
+          <h2 className="text-xl font-semibold text-gray-900">My Listings</h2>
           <Link
             href="/listings/create"
             className="flex items-center space-x-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
@@ -298,8 +298,8 @@ export default function AirtableDashboard() {
 
         {listings.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">You haven't created any listings yet</p>
+            <Package className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-900 mb-4">You haven't created any listings yet</p>
             <Link
               href="/listings/create"
               className="text-blue-600 hover:underline"
@@ -312,22 +312,22 @@ export default function AirtableDashboard() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Views
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -338,10 +338,10 @@ export default function AirtableDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{listing.title}</div>
-                        <div className="text-sm text-gray-500">{listing.eventName}</div>
+                        <div className="text-sm text-gray-900">{listing.eventName}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(listing.eventDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -356,7 +356,7 @@ export default function AirtableDashboard() {
                         {listing.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">
                         <Eye className="h-4 w-4 mr-1" />
                         {listing.views || 0}
@@ -392,30 +392,30 @@ export default function AirtableDashboard() {
 
       {/* Offers Sent */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Offers Sent</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Offers Sent</h2>
         {sentOffers.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <ShoppingBag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">You haven't sent any offers yet</p>
+            <ShoppingBag className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-900">You haven't sent any offers yet</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Offer Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Message
                   </th>
                 </tr>
@@ -428,7 +428,7 @@ export default function AirtableDashboard() {
                         <div className="text-sm font-medium text-gray-900">
                           {offer.listingInfo?.title || 'Event information not available'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-900">
                           {offer.listingInfo?.eventName || 'N/A'}
                         </div>
                       </div>
@@ -452,7 +452,7 @@ export default function AirtableDashboard() {
                         {offer.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {offer.message}
                     </td>
                   </tr>
@@ -465,33 +465,33 @@ export default function AirtableDashboard() {
 
       {/* Offers Received */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Offers Received</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Offers Received</h2>
         {receivedOffers.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">You haven't received any offers yet</p>
+            <Tag className="h-12 w-12 text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-900">You haven't received any offers yet</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Offer Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Quantity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Message
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-900 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -504,7 +504,7 @@ export default function AirtableDashboard() {
                         <div className="text-sm font-medium text-gray-900">
                           {offer.listingInfo?.title || 'Event information not available'}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-900">
                           {offer.listingInfo?.eventName || 'N/A'}
                         </div>
                       </div>
@@ -528,7 +528,7 @@ export default function AirtableDashboard() {
                         {offer.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {offer.message}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

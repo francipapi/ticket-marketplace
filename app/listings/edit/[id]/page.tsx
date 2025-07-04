@@ -254,7 +254,7 @@ export default function EditListingPage() {
           Back to listing
         </Link>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Your Listing</h1>
-        <p className="text-gray-600">Update your ticket listing details</p>
+        <p className="text-gray-900">Update your ticket listing details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -264,7 +264,7 @@ export default function EditListingPage() {
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-900 mb-1">
                 Listing Title *
               </label>
               <input
@@ -280,7 +280,7 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label htmlFor="eventName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="eventName" className="block text-sm font-medium text-gray-900 mb-1">
                 Event Name *
               </label>
               <input
@@ -297,7 +297,7 @@ export default function EditListingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="eventDate" className="block text-sm font-medium text-gray-900 mb-1">
                   <Calendar className="inline h-4 w-4 mr-1" />
                   Event Date & Time *
                 </label>
@@ -313,7 +313,7 @@ export default function EditListingPage() {
               </div>
 
               <div>
-                <label htmlFor="venue" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="venue" className="block text-sm font-medium text-gray-900 mb-1">
                   <MapPin className="inline h-4 w-4 mr-1" />
                   Venue
                 </label>
@@ -330,7 +330,7 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-1">
                 Description
               </label>
               <textarea
@@ -352,7 +352,7 @@ export default function EditListingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="price" className="block text-sm font-medium text-gray-900 mb-1">
                 <DollarSign className="inline h-4 w-4 mr-1" />
                 Price per Ticket (USD) *
               </label>
@@ -371,7 +371,7 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="quantity" className="block text-sm font-medium text-gray-900 mb-1">
                 Number of Tickets *
               </label>
               <select
@@ -396,7 +396,7 @@ export default function EditListingPage() {
         <div className="flex space-x-4">
           <Link
             href={`/listings/${listing.id}`}
-            className="flex-1 py-3 px-4 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors text-center"
+            className="flex-1 py-3 px-4 border border-gray-300 rounded-md text-gray-900 font-medium hover:bg-gray-100 transition-colors text-center"
           >
             Cancel
           </Link>

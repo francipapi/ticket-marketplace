@@ -39,7 +39,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Why Choose TicketMarket?
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-900">
               We make ticket trading safe, simple, and secure
             </p>
           </div>
@@ -50,7 +50,7 @@ export default function Home() {
                 <Shield className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Fraud Prevention</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Advanced verification and watermarking protect against fake tickets
               </p>
             </div>
@@ -60,7 +60,7 @@ export default function Home() {
                 <Zap className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Instant Delivery</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Get your tickets immediately after payment confirmation
               </p>
             </div>
@@ -70,7 +70,7 @@ export default function Home() {
                 <Ticket className="h-8 w-8 text-purple-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">All Event Types</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Concerts, sports, theater, festivals - we support all event tickets
               </p>
             </div>
@@ -80,7 +80,7 @@ export default function Home() {
                 <Users className="h-8 w-8 text-orange-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Trusted Community</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Verified sellers and buyer protection for peace of mind
               </p>
             </div>
@@ -95,7 +95,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               How It Works
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-900">
               Simple steps to buy or sell tickets safely
             </p>
           </div>
@@ -106,7 +106,7 @@ export default function Home() {
                 1
               </div>
               <h3 className="text-xl font-semibold mb-2">Upload Your Tickets</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Sellers upload their digital tickets with automatic watermarking for protection
               </p>
             </div>
@@ -116,7 +116,7 @@ export default function Home() {
                 2
               </div>
               <h3 className="text-xl font-semibold mb-2">Make & Accept Offers</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Buyers make structured offers, sellers accept the best ones
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function Home() {
                 3
               </div>
               <h3 className="text-xl font-semibold mb-2">Pay & Get Tickets</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-900">
                 Secure payment processing with instant ticket delivery upon completion
               </p>
             </div>

@@ -217,7 +217,7 @@ export default function CreateListingPage() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Sell Your Tickets</h1>
-        <p className="text-gray-600">Create a listing for your event tickets</p>
+        <p className="text-gray-900">Create a listing for your event tickets</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -379,7 +379,7 @@ export default function CreateListingPage() {
         {/* File Upload */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Ticket Files (Optional)</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-900 mb-4">
             Upload your ticket files (PDF, JPG, PNG). Files will be watermarked for protection.
           </p>
 
@@ -393,15 +393,15 @@ export default function CreateListingPage() {
             }`}
           >
             <input {...getInputProps()} />
-            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Upload className="h-12 w-12 text-gray-700 mx-auto mb-4" />
             {isDragActive ? (
               <p className="text-blue-600">Drop the files here...</p>
             ) : (
               <>
-                <p className="text-gray-600 mb-2">
+                <p className="text-gray-900 mb-2">
                   Drag & drop your ticket files here, or click to browse
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-900">
                   Supports PDF, JPG, PNG up to 10MB each
                 </p>
               </>
@@ -433,7 +433,7 @@ export default function CreateListingPage() {
                       )}
                       <div>
                         <p className="font-medium text-sm">{file.originalName}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.fileSize)}</p>
+                        <p className="text-xs text-gray-900">{formatFileSize(file.fileSize)}</p>
                       </div>
                     </div>
                     <button

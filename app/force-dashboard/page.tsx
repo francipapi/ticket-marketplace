@@ -13,7 +13,7 @@ export default function ForceDashboardPage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-600">Redirecting to dashboard...</p>
+        <p className="text-gray-900">Redirecting to dashboard...</p>
       </div>
     </div>
   );

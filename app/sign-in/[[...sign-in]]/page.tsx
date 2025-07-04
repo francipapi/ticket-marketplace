@@ -9,7 +9,7 @@ export default function SignInPage() {
             rootBox: 'mx-auto',
             card: 'shadow-lg',
             headerTitle: 'text-2xl',
-            headerSubtitle: 'text-gray-600',
+            headerSubtitle: 'text-gray-900',
             socialButtonsBlockButton: 'border border-gray-300',
             formFieldInput: 'border-gray-300',
             footerActionLink: 'text-blue-600 hover:text-blue-700',
