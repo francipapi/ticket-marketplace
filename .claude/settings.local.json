@@ -20,7 +20,14 @@
       "Bash(mv:*)",
       "Bash(cp:*)",
       "Bash(true)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(USE_AIRTABLE=true npx tsx scripts/test-dashboard-performance.ts)",
+      "WebFetch(domain:airtable.com)",
+      "Bash(USE_AIRTABLE=true npx tsx scripts/test-airtable-fields.ts)",
+      "Bash(USE_AIRTABLE=true AIRTABLE_API_KEY=$AIRTABLE_API_KEY AIRTABLE_BASE_ID=$AIRTABLE_BASE_ID npx tsx scripts/test-dashboard-final.ts)",
+      "Bash(USE_AIRTABLE=true npx tsx scripts/debug-airtable-data.ts)",
+      "WebFetch(domain:support.airtable.com)",
+      "WebFetch(domain:community.airtable.com)"
     ],
     "deny": []
   }

@@ -71,7 +71,7 @@ export default function AirtableDashboard() {
           title: listing.title,
           eventName: listing.eventName,
           eventDate: listing.eventDate,
-          price: listing.price, // Airtable price is already in cents
+          price: listing.priceInCents, // ✅ Fixed: API returns priceInCents, not price
           quantity: listing.quantity,
           status: listing.status,
           views: listing.views || 0,
@@ -132,13 +132,14 @@ export default function AirtableDashboard() {
         // Transform the data to match the expected interface
         const transformedReceivedOffers = (data.offers || []).map((offer: any) => ({
           id: offer.id,
-          offerPrice: offer.offerPrice,
+          offerPrice: offer.offerPriceInCents, // ✅ Fixed: API returns offerPriceInCents
           quantity: offer.quantity,
           status: offer.status,
-          message: offer.message,
+          message: offer.messageTemplate, // ✅ Fixed: API returns messageTemplate
+          customMessage: offer.customMessage, // ✅ Added: Custom message support
           listing: offer.listing,
           createdAt: offer.createdAt,
-          listingInfo: offer.listingInfo,
+          listingInfo: offer.listing, // ✅ Fixed: API returns listing, not listingInfo
         }));
         
         console.log('Transformed received offers:', transformedReceivedOffers);
@@ -453,7 +454,12 @@ export default function AirtableDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {offer.message}
+                      <div>
+                        <div>{offer.message}</div>
+                        {offer.customMessage && (
+                          <div className="text-xs text-gray-600 mt-1">"{offer.customMessage}"</div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -529,7 +535,12 @@ export default function AirtableDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {offer.message}
+                      <div>
+                        <div>{offer.message}</div>
+                        {offer.customMessage && (
+                          <div className="text-xs text-gray-600 mt-1">"{offer.customMessage}"</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {offer.status === 'PENDING' && (

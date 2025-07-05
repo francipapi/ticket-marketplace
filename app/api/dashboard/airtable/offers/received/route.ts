@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
-import { db, handleDatabaseError } from '@/services/database.service';
-import { getTables, recordToObject } from '@/lib/airtable';
+import { getDatabaseService } from '@/lib/services/factory';
+import { handleDatabaseError } from '@/services/database.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +14,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from Airtable
-    const user = await db.getUserByClerkId(userId);
+    // Get database service instance
+    const dbService = getDatabaseService();
+    
+    // Get user from database
+    const user = await dbService.users.findByClerkId(userId);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -23,164 +26,97 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's listings first using improved filtering
-    const tables = getTables();
+    // Get user's listings first to find received offers
+    console.log('Fetching user listings for received offers:', { userId: user.id, username: user.username });
     
-    // Use the same filtering approach as in the listings route
-    const listingFilterOptions = [
-      `FIND('${user.id}', ARRAYJOIN({seller})) > 0`,
-      `SEARCH('${user.id}', ARRAYJOIN({seller}))`,
-      `{seller} = '${user.id}'`,
-      `FIND('${user.id}', ARRAYJOIN({seller}, ',')) > 0`,
-    ];
+    // Use the primary field method to get listings
+    const listingsResult = await (dbService.listings as any).findByUserPrimaryField(user.username, {
+      limit: 50,
+      offset: 0
+    });
     
-    let listingRecords = [];
+    const listingIds = listingsResult.items.map(listing => listing.id);
     
-    for (const filterFormula of listingFilterOptions) {
-      try {
-        console.log('Trying listing filter for received offers:', filterFormula);
-        const testRecords = await tables.listings
-          .select({
-            filterByFormula: filterFormula,
-            maxRecords: 100,
-          })
-          .all();
-        
-        if (testRecords.length > 0) {
-          listingRecords = testRecords;
-          console.log(`✅ Found ${testRecords.length} listings with filter: ${filterFormula}`);
-          break;
-        } else {
-          console.log(`❌ No listings found with filter: ${filterFormula}`);
-        }
-      } catch (error) {
-        console.warn(`❌ Listing filter failed: ${filterFormula}`, error);
-      }
-    }
-    
-    // If Airtable filtering fails, fall back to manual filtering
-    if (listingRecords.length === 0) {
-      console.log('🔄 Airtable listing filtering failed, trying manual filtering...');
-      
-      try {
-        const allListingRecords = await tables.listings.select().all();
-        console.log(`Total listings in database: ${allListingRecords.length}`);
-        
-        listingRecords = allListingRecords.filter(record => {
-          const listing = recordToObject(record);
-          
-          if (Array.isArray(listing.seller)) {
-            return listing.seller.includes(user.id);
-          } else if (typeof listing.seller === 'string') {
-            return listing.seller === user.id;
-          }
-          return false;
-        });
-        
-        console.log(`✅ Manual filtering found ${listingRecords.length} listings for user ${user.id}`);
-      } catch (manualError) {
-        console.error('Manual listing filtering failed:', manualError);
-      }
-    }
-    
-    const listingIds = listingRecords.map(r => r.id);
-
     if (listingIds.length === 0) {
       return NextResponse.json({ offers: [] });
     }
 
-    // Get offers for user's listings
-    console.log('User listings found:', listingIds.length, 'listings:', listingIds);
+    // Get offers for user's listings using the optimized service layer
+    console.log(`Finding offers for ${listingIds.length} user listings`);
     
-    let offerRecords = [];
-    if (listingIds.length > 0) {
-      // Try different filtering approaches for offers
-      const offerFilterOptions = [
-        // Single listing case
-        ...(listingIds.length === 1 ? [
-          `FIND('${listingIds[0]}', ARRAYJOIN({listing})) > 0`,
-          `SEARCH('${listingIds[0]}', ARRAYJOIN({listing}))`,
-          `{listing} = '${listingIds[0]}'`,
-        ] : []),
-        // Multiple listings case
-        ...(listingIds.length > 1 ? [
-          `OR(${listingIds.map(id => `FIND('${id}', ARRAYJOIN({listing})) > 0`).join(',')})`,
-          `OR(${listingIds.map(id => `SEARCH('${id}', ARRAYJOIN({listing}))`).join(',')})`,
-        ] : [])
-      ];
-      
-      for (const filterFormula of offerFilterOptions) {
-        try {
-          console.log('Trying offer filter for received offers:', filterFormula);
-        
-          
-          const testRecords = await tables.offers
-            .select({
-              filterByFormula: filterFormula,
-              maxRecords: 100,
-            })
-            .all();
-          
-          if (testRecords.length > 0) {
-            offerRecords = testRecords;
-            console.log(`✅ Found ${testRecords.length} offers with filter: ${filterFormula}`);
-            break;
-          } else {
-            console.log(`❌ No offers found with filter: ${filterFormula}`);
-          }
-        } catch (error) {
-          console.warn(`❌ Offer filter failed: ${filterFormula}`, error);
-        }
-      }
-      
-      // If Airtable filtering fails, fall back to manual filtering
-      if (offerRecords.length === 0) {
-        console.log('🔄 Airtable offer filtering failed, trying manual filtering...');
-        
-        try {
-          const allOfferRecords = await tables.offers.select().all();
-          console.log(`Total offers in database: ${allOfferRecords.length}`);
-          
-          offerRecords = allOfferRecords.filter(record => {
-            const offer = recordToObject(record);
-            
-            if (Array.isArray(offer.listing)) {
-              return offer.listing.some(listingId => listingIds.includes(listingId));
-            } else if (typeof offer.listing === 'string') {
-              return listingIds.includes(offer.listing);
-            }
-            return false;
-          });
-          
-          console.log(`✅ Manual filtering found ${offerRecords.length} offers for user's listings`);
-        } catch (manualError) {
-          console.error('Manual offer filtering failed:', manualError);
-        }
-      }
+    let allOffers: any[] = [];
+    
+    // Get offers for each listing 
+    for (const listing of listingsResult.items) {
+      // Use listing title (primary field) instead of record ID
+      const offersForListing = await (dbService.offers as any).findByListingPrimaryField(listing.title, {
+        limit: 50,
+        offset: 0
+      });
+      allOffers = allOffers.concat(offersForListing.items);
     }
     
-    const offers = offerRecords.map(recordToObject);
+    // Remove duplicate offers (same offer ID appearing multiple times)
+    const uniqueOffers = allOffers.filter((offer, index, self) => 
+      index === self.findIndex(o => o.id === offer.id)
+    );
     
-    // Fetch listing details for each offer to show event names
+    // Enrich offers with listing information for display
     const offersWithListings = await Promise.all(
-      offers.map(async (offer) => {
-        let listingInfo = null;
+      uniqueOffers.map(async (offer) => {
+        // Find the listing this offer is for
+        const listing = listingsResult.items.find(l => l.title === offer.listingId || l.id === offer.listingId);
         
-        if (offer.listing && offer.listing[0]) {
+        if (listing) {
+          return {
+            ...offer,
+            // Add listing information for display
+            listing: {
+              id: listing.id,
+              title: listing.title,
+              eventName: listing.eventName,
+              eventDate: listing.eventDate,
+              priceInCents: listing.priceInCents,
+              venue: listing.venue
+            }
+          };
+        } else {
+          // If listing not found in our cache, try to fetch it
           try {
-            const listingRecord = await tables.listings.find(offer.listing[0]);
-            listingInfo = recordToObject(listingRecord);
+            const foundListing = await dbService.listings.findById(offer.listingId);
+            if (foundListing) {
+              return {
+                ...offer,
+                listing: {
+                  id: foundListing.id,
+                  title: foundListing.title,
+                  eventName: foundListing.eventName,
+                  eventDate: foundListing.eventDate,
+                  priceInCents: foundListing.priceInCents,
+                  venue: foundListing.venue
+                }
+              };
+            }
           } catch (error) {
-            console.warn('Failed to fetch listing for offer:', offer.id, error);
+            console.warn(`Could not fetch listing ${offer.listingId} for offer ${offer.id}`);
           }
+          
+          return {
+            ...offer,
+            listing: {
+              id: offer.listingId,
+              title: 'Unknown Listing',
+              eventName: 'Event information not available',
+              eventDate: new Date(),
+              priceInCents: 0,
+              venue: 'Unknown'
+            }
+          };
         }
-        
-        return {
-          ...offer,
-          listingInfo
-        };
       })
     );
+    
+    console.log(`✅ Found ${allOffers.length} total offers, ${uniqueOffers.length} unique received offers with listing data using service layer`);
 
     return NextResponse.json({ offers: offersWithListings });
   } catch (error) {

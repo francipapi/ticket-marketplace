@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, getAuth } from '@clerk/nextjs/server';
-import { db, handleDatabaseError } from '@/services/database.service';
-import { getTables, recordToObject } from '@/lib/airtable';
+import { getAuth } from '@clerk/nextjs/server';
+import { getDatabaseService } from '@/lib/services/factory';
+import { handleDatabaseError } from '@/services/database.service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +15,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from Airtable
-    const user = await db.getUserByClerkId(userId);
+    // Get database service instance
+    const dbService = getDatabaseService();
+    
+    // Get user from database
+    const user = await dbService.users.findByClerkId(userId);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -24,75 +27,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's listings
+    // Get user's listings using the optimized service layer
     console.log('Fetching listings for user:', { userId: user.id, username: user.username });
     
-    const tables = getTables();
+    // Try filtering by primary field (username) instead of record ID
+    const listingsResult = await (dbService.listings as any).findByUserPrimaryField(user.username, {
+      limit: 50,
+      offset: 0
+    });
     
-    // Research shows FIND() works better than SEARCH() for linked record IDs
-    // Try different approaches based on Airtable documentation
-    const filterOptions = [
-      // Approach 1: FIND with ARRAYJOIN (most reliable for record IDs)
-      `FIND('${user.id}', ARRAYJOIN({seller})) > 0`,
-      // Approach 2: SEARCH with ARRAYJOIN
-      `SEARCH('${user.id}', ARRAYJOIN({seller}))`,
-      // Approach 3: Direct comparison if single linked record
-      `{seller} = '${user.id}'`,
-      // Approach 4: FIND with comma separator (in case ARRAYJOIN uses commas)
-      `FIND('${user.id}', ARRAYJOIN({seller}, ',')) > 0`,
-    ];
-    
-    let records = [];
-    let successfulFilter = null;
-    
-    for (const filterFormula of filterOptions) {
-      try {
-        console.log('Trying filter formula:', filterFormula);
-        
-        const testRecords = await tables.listings
-          .select({
-            filterByFormula: filterFormula,
-          })
-          .all();
-        
-        if (testRecords.length > 0) {
-          records = testRecords;
-          successfulFilter = filterFormula;
-          console.log(`✅ SUCCESS: Found ${testRecords.length} listings with filter: ${filterFormula}`);
-          break;
-        } else {
-          console.log(`❌ No records found with filter: ${filterFormula}`);
-        }
-      } catch (error) {
-        console.warn(`❌ Filter failed: ${filterFormula}`, error);
-      }
-    }
-    
-    // If Airtable filtering fails, fall back to manual filtering
-    if (records.length === 0) {
-      console.log('🔄 Airtable filtering failed, falling back to manual filtering...');
-      
-      const allRecords = await tables.listings.select().all();
-      console.log(`Total listings in database: ${allRecords.length}`);
-      
-      records = allRecords.filter(record => {
-        const listing = recordToObject(record);
-        
-        // Handle different seller field formats
-        if (Array.isArray(listing.seller)) {
-          return listing.seller.includes(user.id);
-        } else if (typeof listing.seller === 'string') {
-          return listing.seller === user.id;
-        }
-        return false;
-      });
-      
-      console.log(`✅ Manual filtering found ${records.length} listings for user ${user.id}`);
-    }
-    
-    console.log('Found listing records:', records.length);
-    const listings = records.map(recordToObject);
-    console.log('Processed listings:', listings.map(l => ({ id: l.id, title: l.title, seller: l.seller })));
+    console.log(`✅ Found ${listingsResult.items.length} listings using service layer`);
+    const listings = listingsResult.items;
 
     return NextResponse.json({ listings });
   } catch (error) {
