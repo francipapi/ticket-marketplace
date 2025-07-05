@@ -1,0 +1,498 @@
+{
+  "fetchedAt": "2025-07-05T21:03:18.655Z",
+  "baseId": "apphGdyr5vFOJx2kF",
+  "schema": {
+    "tables": [
+      {
+        "id": "tbliJq4wWtb3XAKKd",
+        "name": "Users",
+        "primaryFieldId": "fldCuipMRPGCeLRt5",
+        "fields": [
+          {
+            "type": "email",
+            "id": "fldCuipMRPGCeLRt5",
+            "name": "email"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldH0hLzjXzZnnvdl",
+            "name": "username"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldbyE6S0ysXcDdUh",
+            "name": "clerkId"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 1
+            },
+            "id": "fldY5f23KfBfFYDrI",
+            "name": "rating"
+          },
+          {
+            "type": "checkbox",
+            "options": {
+              "icon": "check",
+              "color": "greenBright"
+            },
+            "id": "fldj7MqUGpMASRcQX",
+            "name": "isVerified"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fldGCGhDpPF6LjoN6",
+            "name": "totalSales"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldicsz1FkFDdQMbv",
+            "name": "stripeAccountId"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblXwFIwGCygYyZJO",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldJ0jniP4ctAzksW"
+            },
+            "id": "fldIUPmO6UeqEsrI4",
+            "name": "Offers"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblGUIbXpyWQLCx6Z",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fld3znvlKMuBosKSg"
+            },
+            "id": "fldA63gffJNQghWo4",
+            "name": "Listings"
+          }
+        ],
+        "views": [
+          {
+            "id": "viwEvSNvLjcGYDeX6",
+            "name": "Grid view",
+            "type": "grid"
+          }
+        ]
+      },
+      {
+        "id": "tblGUIbXpyWQLCx6Z",
+        "name": "Listings",
+        "primaryFieldId": "fldBk7jBhgFean3XN",
+        "fields": [
+          {
+            "type": "singleLineText",
+            "id": "fldBk7jBhgFean3XN",
+            "name": "title"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldIIuM1EZwcbbxnM",
+            "name": "eventName"
+          },
+          {
+            "type": "date",
+            "options": {
+              "dateFormat": {
+                "name": "local",
+                "format": "l"
+              }
+            },
+            "id": "fld4Ukq2sKDOSNyvH",
+            "name": "eventDate"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fldXJNIW6xYDJy7vW",
+            "name": "price"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fld7rHFkaBsMq3cey",
+            "name": "quantity"
+          },
+          {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "seldhnjdoiGX2MvGD",
+                  "name": "ACTIVE",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selDAoaZ0SvU8wfyG",
+                  "name": "INACTIVE",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selvz9EHbciTNvZzI",
+                  "name": "SOLD",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selZm4yLRIgeGMLQx",
+                  "name": "DELISTED",
+                  "color": "greenLight2"
+                }
+              ]
+            },
+            "id": "fldKLEoIzvg9xKxHn",
+            "name": "status"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tbliJq4wWtb3XAKKd",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldA63gffJNQghWo4"
+            },
+            "id": "fld3znvlKMuBosKSg",
+            "name": "seller"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldrh2Nib0rJQdLI0",
+            "name": "venue"
+          },
+          {
+            "type": "multilineText",
+            "id": "fldZMQJ8ZHih8AmJ5",
+            "name": "description"
+          },
+          {
+            "type": "multipleAttachments",
+            "options": {
+              "isReversed": true
+            },
+            "id": "fldINIJWmBWYEFRpy",
+            "name": "ticketFiles"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fldUNXliqjMWhcal1",
+            "name": "views"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblXwFIwGCygYyZJO",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldfWcanTGKG44QPe"
+            },
+            "id": "fldHTDpzVdKBp7J3x",
+            "name": "Offers"
+          }
+        ],
+        "views": [
+          {
+            "id": "viwajFtcXMWcA0Ss4",
+            "name": "Grid view",
+            "type": "grid"
+          }
+        ]
+      },
+      {
+        "id": "tblXwFIwGCygYyZJO",
+        "name": "Offers",
+        "primaryFieldId": "flda12V9hD3wjpu3u",
+        "fields": [
+          {
+            "type": "formula",
+            "options": {
+              "isValid": true,
+              "formula": "\"OFFER-\" & RECORD_ID()",
+              "referencedFieldIds": [],
+              "result": {
+                "type": "singleLineText"
+              }
+            },
+            "id": "flda12V9hD3wjpu3u",
+            "name": "offerCode"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblGUIbXpyWQLCx6Z",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldHTDpzVdKBp7J3x"
+            },
+            "id": "fldfWcanTGKG44QPe",
+            "name": "listing"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tbliJq4wWtb3XAKKd",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldIUPmO6UeqEsrI4"
+            },
+            "id": "fldJ0jniP4ctAzksW",
+            "name": "buyer"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fld9XdIedQkPIrHsO",
+            "name": "offerPrice"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fldhgq696BMId1Qyu",
+            "name": "quantity"
+          },
+          {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selvds2jXzmgjmZ3h",
+                  "name": "PENDING",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selrzHLQ9KClES42s",
+                  "name": "ACCEPTED",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selqFGlo9EZLL0nRW",
+                  "name": "REJECTED",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selL3iFmRYPAikGuc",
+                  "name": "EXPIRED",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selplowoa2261rvIP",
+                  "name": "COMPLETED",
+                  "color": "yellowLight2"
+                }
+              ]
+            },
+            "id": "fldQCsNC0wAdzCY7J",
+            "name": "status"
+          },
+          {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selvVW6Zf5240rQsj",
+                  "name": "Buy at asking price",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "seluS0GqeVKMm0SlW",
+                  "name": "Make offer",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "seltDjvvMOxS73UqO",
+                  "name": "Check availability",
+                  "color": "tealLight2"
+                }
+              ]
+            },
+            "id": "fldIAWxeprFi7A4Cw",
+            "name": "message"
+          },
+          {
+            "type": "multilineText",
+            "id": "fldcO8jwxXxsNllFj",
+            "name": "customMessage"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblzzIEXHEP9kaZhz",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fldlerNRaWm6ZFmD7"
+            },
+            "id": "fld9HCAp7xh3h1Fbc",
+            "name": "Transactions"
+          }
+        ],
+        "views": [
+          {
+            "id": "viwRqyTEKWX1h4Vb5",
+            "name": "Grid view",
+            "type": "grid"
+          }
+        ]
+      },
+      {
+        "id": "tblzzIEXHEP9kaZhz",
+        "name": "Transactions",
+        "primaryFieldId": "fld7OyWwzkNJ7zKSC",
+        "fields": [
+          {
+            "type": "formula",
+            "options": {
+              "isValid": true,
+              "formula": "CONCATENATE(\"TXN-\", RECORD_ID())",
+              "referencedFieldIds": [],
+              "result": {
+                "type": "singleLineText"
+              }
+            },
+            "id": "fld7OyWwzkNJ7zKSC",
+            "name": "transactionId"
+          },
+          {
+            "type": "multipleRecordLinks",
+            "options": {
+              "linkedTableId": "tblXwFIwGCygYyZJO",
+              "isReversed": false,
+              "prefersSingleRecordLink": false,
+              "inverseLinkFieldId": "fld9HCAp7xh3h1Fbc"
+            },
+            "id": "fldlerNRaWm6ZFmD7",
+            "name": "offer"
+          },
+          {
+            "type": "number",
+            "options": {
+              "precision": 0
+            },
+            "id": "fldpCxFAJarS7YNOS",
+            "name": "amount"
+          },
+          {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selciXJmWQTjRAcMj",
+                  "name": "PENDING",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selRdd89Xff1JX9jU",
+                  "name": "PROCESSING",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "seldXVvnm3Zf4txPu",
+                  "name": "COMPLETED",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selCa248q53FWkwE6",
+                  "name": "FAILED",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selZ3k0NMeSnOOabk",
+                  "name": "REFUNDED",
+                  "color": "yellowLight2"
+                }
+              ]
+            },
+            "id": "fld5qtXi5rLM9cONK",
+            "name": "status"
+          },
+          {
+            "type": "singleLineText",
+            "id": "fldAceKwI2kVwrGst",
+            "name": "stripePaymentId"
+          },
+          {
+            "type": "date",
+            "options": {
+              "dateFormat": {
+                "name": "local",
+                "format": "l"
+              }
+            },
+            "id": "fldILBBt8YvRhEquc",
+            "name": "completedAt"
+          }
+        ],
+        "views": [
+          {
+            "id": "viwyA4l9XNz2SXsbD",
+            "name": "Grid view",
+            "type": "grid"
+          }
+        ]
+      }
+    ]
+  },
+  "fieldMappings": {
+    "users": {
+      "email": "email",
+      "username": "username",
+      "clerkid": "clerkId",
+      "rating": "rating",
+      "isverified": "isVerified",
+      "totalsales": "totalSales",
+      "stripeaccountid": "stripeAccountId",
+      "offers": "Offers",
+      "listings": "Listings"
+    },
+    "listings": {
+      "title": "title",
+      "eventname": "eventName",
+      "eventdate": "eventDate",
+      "price": "price",
+      "quantity": "quantity",
+      "status": "status",
+      "seller": "seller",
+      "venue": "venue",
+      "description": "description",
+      "ticketfiles": "ticketFiles",
+      "views": "views",
+      "offers": "Offers"
+    },
+    "offers": {
+      "offercode": "offerCode",
+      "listing": "listing",
+      "buyer": "buyer",
+      "offerprice": "offerPrice",
+      "quantity": "quantity",
+      "status": "status",
+      "message": "message",
+      "custommessage": "customMessage",
+      "transactions": "Transactions"
+    },
+    "transactions": {
+      "transactionid": "transactionId",
+      "offer": "offer",
+      "amount": "amount",
+      "status": "status",
+      "stripepaymentid": "stripePaymentId",
+      "completedat": "completedAt"
+    }
+  }
+}

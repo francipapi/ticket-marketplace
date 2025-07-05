@@ -32,7 +32,7 @@ export class AuthService {
 
     try {
       // Try to find existing user in database
-      let user = await this.dbService.users.findByClerkId(userId)
+      let user = await AuthService.dbService.users.findByClerkId(userId)
       
       if (user) {
         console.log(`✅ Existing user found: ${user.id} (${user.email})`)
@@ -41,7 +41,7 @@ export class AuthService {
 
       // User doesn't exist, create from Clerk data
       console.log(`👤 Creating new user from Clerk data: ${userId}`)
-      user = await this.createUserFromClerk(userId)
+      user = await AuthService.createUserFromClerk(userId)
       
       console.log(`✅ New user created: ${user.id} (${user.email})`)
       return user
@@ -69,7 +69,7 @@ export class AuthService {
       console.log(`🔍 User authenticated with Clerk ID: ${userId}`)
 
       // Try to find existing user
-      let user = await this.dbService.users.findByClerkId(userId)
+      let user = await AuthService.dbService.users.findByClerkId(userId)
       
       if (user) {
         console.log(`✅ Current user found: ${user.id} (${user.email})`)
@@ -78,7 +78,7 @@ export class AuthService {
 
       // Auto-create user if they don't exist
       console.log(`👤 Auto-creating user from Clerk data: ${userId}`)
-      user = await this.createUserFromClerk(userId)
+      user = await AuthService.createUserFromClerk(userId)
       
       console.log(`✅ User auto-created: ${user.id} (${user.email})`)
       return user
@@ -94,7 +94,7 @@ export class AuthService {
    */
   static async getAuthResult(): Promise<AuthResult> {
     try {
-      const user = await this.requireAuth()
+      const user = await AuthService.requireAuth()
       return {
         success: true,
         user,
@@ -144,14 +144,15 @@ export class AuthService {
     
     try {
       // Get latest data from Clerk
-      const clerkUser = await clerkClient.users.getUser(clerkUserId)
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(clerkUserId)
       
       // Find existing user in database
-      const existingUser = await this.dbService.users.findByClerkId(clerkUserId)
+      const existingUser = await AuthService.dbService.users.findByClerkId(clerkUserId)
       
       if (existingUser) {
         // Update existing user with latest Clerk data
-        const updatedUser = await this.dbService.users.update(existingUser.id, {
+        const updatedUser = await AuthService.dbService.users.update(existingUser.id, {
           email: clerkUser.emailAddresses[0]?.emailAddress || existingUser.email,
           username: clerkUser.username || clerkUser.firstName || existingUser.username
         })
@@ -160,7 +161,7 @@ export class AuthService {
         return updatedUser
       } else {
         // Create new user
-        return await this.createUserFromClerk(clerkUserId)
+        return await AuthService.createUserFromClerk(clerkUserId)
       }
       
     } catch (error) {
@@ -177,10 +178,11 @@ export class AuthService {
     
     try {
       // Get user data from Clerk
-      const clerkUser = await clerkClient.users.getUser(clerkUserId)
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(clerkUserId)
       
       // Extract email address
-      const primaryEmail = clerkUser.emailAddresses.find(email => email.id === clerkUser.primaryEmailAddressId)
+      const primaryEmail = clerkUser.emailAddresses.find((email: any) => email.id === clerkUser.primaryEmailAddressId)
       const email = primaryEmail?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress
       
       if (!email) {
@@ -199,7 +201,7 @@ export class AuthService {
         email: email,
         username: username,
         rating: 5.0, // Default rating
-        isVerified: !!clerkUser.emailAddresses.find(email => email.verification?.status === 'verified'),
+        isVerified: !!clerkUser.emailAddresses.find((email: any) => email.verification?.status === 'verified'),
         totalSales: 0
       }
 
@@ -210,7 +212,7 @@ export class AuthService {
         isVerified: userData.isVerified
       })
 
-      const user = await this.dbService.users.create(userData)
+      const user = await AuthService.dbService.users.create(userData)
       
       console.log(`✅ User created successfully: ${user.id}`)
       return user
@@ -228,7 +230,7 @@ export class AuthService {
     console.log(`🗑️ Deleting user: ${userId}`)
     
     try {
-      const deleted = await this.dbService.users.delete(userId)
+      const deleted = await AuthService.dbService.users.delete(userId)
       if (deleted) {
         console.log(`✅ User deleted: ${userId}`)
       } else {
@@ -252,7 +254,7 @@ export class AuthService {
     console.log(`📝 Updating user profile: ${userId}`)
     
     try {
-      const updatedUser = await this.dbService.users.update(userId, updates)
+      const updatedUser = await AuthService.dbService.users.update(userId, updates)
       console.log(`✅ User profile updated: ${userId}`)
       return updatedUser
     } catch (error) {
@@ -273,7 +275,7 @@ export class AuthService {
     console.log(`📊 Getting user statistics: ${userId}`)
     
     try {
-      const user = await this.dbService.users.findById(userId)
+      const user = await AuthService.dbService.users.findById(userId)
       if (!user) {
         throw new Error('User not found')
       }
@@ -300,7 +302,7 @@ export class AuthService {
    */
   static async protectRoute(): Promise<{ user: AppUser; clerkUserId: string }> {
     try {
-      const user = await this.requireAuth()
+      const user = await AuthService.requireAuth()
       return { user, clerkUserId: user.clerkId }
     } catch (error) {
       throw new Error('Route protection failed: ' + error)

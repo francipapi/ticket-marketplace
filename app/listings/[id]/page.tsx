@@ -50,7 +50,7 @@ export default function ListingDetailsPage() {
 
   const fetchListing = useCallback(async () => {
     try {
-      const response = await fetch(`/api/listings/airtable/${params.id}`);
+      const response = await fetch(`/api/listings/${params.id}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -352,14 +352,14 @@ function OfferModal({
         offerPrice = Math.round(priceInDollars * 100);
       }
 
-      const response = await fetch('/api/offers/airtable', {
+      const response = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           listingId: listing.id,
-          offerPrice: offerPrice, // Note: using offerPrice not offerPriceInCents for Airtable
+          offerPriceInCents: offerPrice, // API expects offerPriceInCents
           quantity,
-          message: getMessageFromTemplate(messageTemplate),
+          messageTemplate: messageTemplate, // API expects messageTemplate, not message
           customMessage: messageTemplate === 'make_offer' ? customMessage : undefined,
         }),
       });
@@ -372,8 +372,11 @@ function OfferModal({
         toast.success('Offer sent successfully!');
         onSuccess();
       } else {
-        console.error('Offer failed:', result);
-        toast.error(result.error || 'Failed to send offer');
+        console.error('Offer failed:', { status: response.status, result });
+        // Show more detailed error message
+        const errorMessage = result.error || result.message || 'Failed to send offer';
+        const details = result.details ? ` Details: ${JSON.stringify(result.details)}` : '';
+        toast.error(errorMessage + details);
       }
     } catch (error) {
       console.error('Error sending offer:', error);

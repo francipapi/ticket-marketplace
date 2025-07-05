@@ -225,15 +225,92 @@ return airtableQueue.add(async () => {
 ```
 
 ### Airtable Filtering for Linked Records
-Use `FIND()` with `ARRAYJOIN()` for most reliable filtering:
-```javascript
-// Recommended approach for Phase 2
-`FIND('${recordId}', ARRAYJOIN({linkedField})) > 0`
+**CRITICAL: Linked record fields must be filtered by PRIMARY FIELD values, NOT record IDs**
 
-// Alternative approaches if needed
-`SEARCH('${recordId}', ARRAYJOIN({linkedField}))`
-`{linkedField} = '${recordId}'` // For single linked records
+Airtable linked record fields internally store record IDs but display and filter by the primary field of the linked table. Always use the primary field value for filtering:
+
+```javascript
+// ✅ CORRECT: Filter by primary field values
+// Users table primary field = email
+`{seller} = "alice@example.com"`
+
+// Listings table primary field = title  
+`{listing} = "Concert Ticket"`
+
+// For FIND operations with primary fields
+`FIND("alice@example.com", ARRAYJOIN({seller})) > 0`
+`FIND("Concert Ticket", ARRAYJOIN({listing})) > 0`
 ```
+
+```javascript
+// ❌ WRONG: These will return 0 results
+`{seller} = "recQdwm14dppUN5KH"`  // Record ID filtering fails
+`FIND("recQdwm14dppUN5KH", ARRAYJOIN({seller})) > 0`  // Record ID filtering fails
+```
+
+**Implementation Pattern for Services:**
+```typescript
+// Always lookup the primary field value first
+if (filters.userId) {
+  const userService = (await import('../../factory')).getDatabaseService().users
+  const user = await userService.findById(filters.userId)
+  
+  if (user && user.email) {
+    // Use email (primary field) for filtering
+    filterFormulas.push(`{seller} = "${user.email}"`)
+  }
+}
+
+if (filters.listingId) {
+  const listingService = (await import('../../factory')).getDatabaseService().listings
+  const listing = await listingService.findById(filters.listingId)
+  
+  if (listing && listing.title) {
+    // Use title (primary field) for filtering
+    filterFormulas.push(`{listing} = "${listing.title}"`)
+  }
+}
+```
+
+**Primary Fields by Table:**
+- **Users**: `email` (Email field)
+- **Listings**: `title` (Single line text field)
+- **Offers**: `offerCode` (Formula field)
+- **Transactions**: `transactionId` (Formula field)
+
+### API Endpoint Consistency
+**CRITICAL: All frontend forms must use the correct API endpoints**
+
+During Phase 2 migration, some frontend forms may reference old `/airtable` endpoints. Always use the standard API routes:
+
+```javascript
+// ✅ CORRECT API endpoints
+POST   /api/listings           // Create listing
+GET    /api/listings/{id}      // Get listing
+PUT    /api/listings/{id}      // Update listing
+DELETE /api/listings/{id}      // Delete listing
+
+GET    /api/offers?type=sent   // Get sent offers
+GET    /api/offers?type=received // Get received offers
+POST   /api/offers            // Create offer
+```
+
+```javascript
+// ❌ WRONG: These endpoints don't exist
+POST   /api/listings/airtable           // 405 Method Not Allowed
+GET    /api/listings/airtable/{id}      // 404 Not Found
+PUT    /api/listings/airtable/{id}      // 404 Not Found
+```
+
+**Field Name Consistency:**
+- Frontend forms should send `priceInCents` not `price`
+- API validation schemas expect `priceInCents` for price fields
+- Always convert dollars to cents: `Math.round(price * 100)`
+
+**Offer Creation Fields:**
+- Use `offerPriceInCents` not `offerPrice`
+- Use `messageTemplate` not `message`
+- Valid messageTemplate values: `'asking_price'`, `'make_offer'`, `'check_availability'`
 
 ### Clerk Server-Side Authentication (Phase 2 Requirement)
 ```typescript

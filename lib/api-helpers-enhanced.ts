@@ -369,5 +369,10 @@ export function checkRateLimit(
   return { allowed: true, remaining: limit - entry.count, resetTime: entry.resetTime }
 }
 
+// Wrapper for consistent error handling in API routes
+export function withErrorHandling<T>(handler: () => Promise<T>): Promise<T> {
+  return handleApiError(handler, 'API request')
+}
+
 // Export types
 export type { AppUser }

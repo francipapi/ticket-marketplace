@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
-import { db } from '@/services/database.service';
+import { getDatabaseService } from '@/lib/services/factory';
+import { withErrorHandling } from '@/lib/api-helpers-enhanced';
 
 export async function GET() {
-  try {
+  return withErrorHandling(async () => {
     const clerkUser = await currentUser();
     
     if (!clerkUser) {
@@ -13,28 +14,30 @@ export async function GET() {
       }, { status: 401 });
     }
 
-    // Check if user exists in Airtable
-    let airtableUser = await db.getUserByClerkId(clerkUser.id);
+    const dbService = getDatabaseService();
+
+    // Check if user exists in database
+    let user = await dbService.users.findByClerkId(clerkUser.id);
     
-    if (!airtableUser) {
+    if (!user) {
       // Create the user
       const email = clerkUser.emailAddresses[0]?.emailAddress || 'no-email@example.com';
       let username = clerkUser.username || clerkUser.firstName || email.split('@')[0] || 'user';
       
       // Make username unique if needed by appending a timestamp
-      const existingUsername = await db.getUserByEmail(username);
-      if (existingUsername) {
+      const existingUser = await dbService.users.findByEmail(email);
+      if (existingUser) {
         username = `${username}_${Date.now()}`;
       }
       
       try {
-        airtableUser = await db.createUser({
+        user = await dbService.users.create({
           email,
           username,
           clerkId: clerkUser.id,
         });
       } catch (createError: any) {
-        console.error('Failed to create user in Airtable:', createError);
+        console.error('Failed to create user:', createError);
         return NextResponse.json({
           error: 'Failed to create user',
           details: createError.message
@@ -44,20 +47,14 @@ export async function GET() {
     
     return NextResponse.json({
       user: {
-        id: airtableUser.id,
-        email: airtableUser.email,
-        username: airtableUser.username,
-        clerkId: airtableUser.clerkId,
-        rating: airtableUser.rating,
-        isVerified: airtableUser.isVerified,
-        totalSales: airtableUser.totalSales,
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        clerkId: user.clerkId,
+        rating: user.rating,
+        isVerified: user.isVerified,
+        totalSales: user.totalSales,
       }
     });
-  } catch (error: any) {
-    console.error('User sync error:', error);
-    return NextResponse.json({ 
-      error: 'Server error',
-      details: error.message 
-    }, { status: 500 });
-  }
+  });
 }

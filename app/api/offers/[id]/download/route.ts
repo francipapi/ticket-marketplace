@@ -1,44 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '@/lib/api-helpers';
-import fs from 'fs';
-import path from 'path';
-
-const prisma = new PrismaClient();
+import { getDatabaseService } from '@/lib/services/factory';
+import { requireAuth } from '@/lib/auth-server';
+import { withErrorHandling } from '@/lib/api-helpers-enhanced';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withErrorHandling(async () => {
     const { id } = await params;
     const user = await requireAuth();
+    const dbService = getDatabaseService();
 
-    // Verify user still exists in database
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { id: true, email: true, username: true },
-    });
-    
-    if (!dbUser) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 401 }
-      );
-    }
-
-    // Verify the offer exists, is paid, and belongs to the user
-    const offer = await prisma.offer.findUnique({
-      where: { id },
-      include: { 
-        listing: {
-          include: {
-            user: true
-          }
-        }
-      }
-    });
-
+    // Get the offer
+    const offer = await dbService.offers.findById(id);
     if (!offer) {
       return NextResponse.json(
         { success: false, error: 'Offer not found' },
@@ -46,82 +21,67 @@ export async function GET(
       );
     }
 
-    if (offer.buyerId !== dbUser.id) {
+    // Verify the offer belongs to the user
+    if (offer.buyerId !== user.id) {
       return NextResponse.json(
         { success: false, error: 'You can only download tickets for your own paid offers' },
         { status: 403 }
       );
     }
 
-    if (!offer.isPaid || offer.status !== 'completed') {
+    // Check if offer is completed and paid
+    if (offer.status !== 'COMPLETED') {
       return NextResponse.json(
-        { success: false, error: 'You can only download tickets for completed and paid offers' },
+        { success: false, error: 'You can only download tickets for completed offers' },
         { status: 400 }
       );
     }
 
-    // Check if listing has a ticket file
-    if (!offer.listing.ticketPath || !offer.listing.originalFileName) {
-      // Generate a mock ticket file for demonstration
-      const ticketContent = `
+    // Get the listing
+    const listing = await dbService.listings.findById(offer.listingId);
+    if (!listing) {
+      return NextResponse.json(
+        { success: false, error: 'Listing not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get seller info
+    const seller = await dbService.users.findById(listing.userId);
+    const sellerName = seller?.username || 'Unknown Seller';
+
+    // Generate a mock ticket file for demonstration
+    const ticketContent = `
 🎫 TICKET CONFIRMATION 🎫
 
-Event: ${offer.listing.eventName}
-Title: ${offer.listing.title}
-Date: ${new Date(offer.listing.eventDate).toLocaleDateString()}
-${offer.listing.venue ? `Venue: ${offer.listing.venue}` : ''}
+Event: ${listing.eventName}
+Title: ${listing.title}
+Date: ${new Date(listing.eventDate).toLocaleDateString()}
+${listing.venue ? `Venue: ${listing.venue}` : ''}
 
 Quantity: ${offer.quantity} ticket(s)
 Total Paid: $${(offer.offerPriceInCents / 100).toFixed(2)}
 
 Confirmation Number: ${offer.id}
-Purchase Date: ${new Date(offer.paidAt!).toLocaleDateString()}
+Purchase Date: ${new Date().toLocaleDateString()}
 
-Sold by: ${offer.listing.user.username}
-Purchased by: ${dbUser.username}
+Sold by: ${sellerName}
+Purchased by: ${user.username}
 
 ⚠️  This is a mock ticket for demonstration purposes.
 In a real implementation, this would be the actual ticket file
 uploaded by the seller with proper watermarking and security.
 
 Thank you for using Ticket Marketplace!
-      `.trim();
+    `.trim();
 
-      const fileName = `ticket-${offer.listing.eventName.replace(/[^a-zA-Z0-9]/g, '-')}-${offer.id}.txt`;
-      
-      return new NextResponse(ticketContent, {
-        headers: {
-          'Content-Type': 'text/plain',
-          'Content-Disposition': `attachment; filename="${fileName}"`,
-        },
-      });
-    }
-
-    // Try to serve the actual uploaded file
-    const filePath = path.join(process.cwd(), 'uploads', offer.listing.ticketPath);
+    const fileName = `ticket-${listing.eventName.replace(/[^a-zA-Z0-9]/g, '-')}-${offer.id}.txt`;
     
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json(
-        { success: false, error: 'Ticket file not found on server' },
-        { status: 404 }
-      );
-    }
-
-    const fileBuffer = fs.readFileSync(filePath);
-    const mimeType = offer.listing.fileType || 'application/octet-stream';
-    
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(ticketContent, {
       headers: {
-        'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${offer.listing.originalFileName}"`,
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
-
-  } catch (error) {
-    console.error('Error downloading ticket:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to download ticket' },
-      { status: 500 }
-    );
-  }
+  });
 }

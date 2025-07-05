@@ -23,6 +23,7 @@ interface Offer {
   quantity: number;
   status: string;
   message: string;
+  customMessage?: string;
   listing?: string[];
   createdAt: string;
   listingInfo?: {
@@ -58,7 +59,7 @@ export default function AirtableDashboard() {
       console.log('Fetching dashboard data...');
       
       // Fetch user's listings
-      const listingsRes = await fetch('/api/dashboard/airtable/listings');
+      const listingsRes = await fetch(`/api/listings?userId=${user?.id}`);
       console.log('Listings response status:', listingsRes.status);
       
       if (listingsRes.ok) {
@@ -90,7 +91,7 @@ export default function AirtableDashboard() {
       }
 
       // Fetch sent offers
-      const sentRes = await fetch('/api/dashboard/airtable/offers/sent');
+      const sentRes = await fetch('/api/offers?type=sent');
       console.log('Sent offers response status:', sentRes.status);
       
       if (sentRes.ok) {
@@ -98,15 +99,17 @@ export default function AirtableDashboard() {
         console.log('Sent offers data received:', data);
         
         // Transform the data to match the expected interface
-        const transformedSentOffers = (data.offers || []).map((offer: any) => ({
+        // API returns offers directly, not wrapped in 'offers' property
+        const transformedSentOffers = (Array.isArray(data) ? data : []).map((offer: any) => ({
           id: offer.id,
-          offerPrice: offer.offerPrice,
+          offerPrice: offer.offerPriceInCents, // ✅ Fixed: API returns offerPriceInCents
           quantity: offer.quantity,
           status: offer.status,
-          message: offer.message,
+          message: offer.messageTemplate, // ✅ Fixed: API returns messageTemplate
+          customMessage: offer.customMessage, // ✅ Added: Custom message support
           listing: offer.listing,
           createdAt: offer.createdAt,
-          listingInfo: offer.listingInfo,
+          listingInfo: offer.listing, // ✅ Fixed: API returns listing, not listingInfo
         }));
         
         console.log('Transformed sent offers:', transformedSentOffers);
@@ -121,8 +124,8 @@ export default function AirtableDashboard() {
         }
       }
 
-      // Fetch received offers
-      const receivedRes = await fetch('/api/dashboard/airtable/offers/received');
+      // Fetch received offers  
+      const receivedRes = await fetch('/api/offers?type=received');
       console.log('Received offers response status:', receivedRes.status);
       
       if (receivedRes.ok) {
@@ -130,7 +133,8 @@ export default function AirtableDashboard() {
         console.log('Received offers data received:', data);
         
         // Transform the data to match the expected interface
-        const transformedReceivedOffers = (data.offers || []).map((offer: any) => ({
+        // API returns offers directly, not wrapped in 'offers' property
+        const transformedReceivedOffers = (Array.isArray(data) ? data : []).map((offer: any) => ({
           id: offer.id,
           offerPrice: offer.offerPriceInCents, // ✅ Fixed: API returns offerPriceInCents
           quantity: offer.quantity,
@@ -165,7 +169,7 @@ export default function AirtableDashboard() {
     if (!confirm('Are you sure you want to delete this listing?')) return;
 
     try {
-      const res = await fetch(`/api/listings/airtable/${id}`, {
+      const res = await fetch(`/api/listings/${id}`, {
         method: 'DELETE',
       });
 

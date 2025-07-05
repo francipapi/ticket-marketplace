@@ -36,7 +36,7 @@ export class AirtableUserService implements UserService {
       console.log(`✅ User created with ID: ${record.id}`)
 
       // Transform back to app format
-      const user = this.transformToAppUser(record)
+      const user = this.transformToAppUser(record as any)
 
       // Cache the user
       this.cacheUser(user)
@@ -69,7 +69,7 @@ export class AirtableUserService implements UserService {
       console.log(`✅ User found: ${record.id}`)
 
       // Transform and cache
-      const user = this.transformToAppUser(record)
+      const user = this.transformToAppUser(record as any)
       this.cacheUser(user)
 
       return user
@@ -112,7 +112,7 @@ export class AirtableUserService implements UserService {
       console.log(`✅ User found by Clerk ID: ${records[0].id}`)
 
       // Transform and cache
-      const user = this.transformToAppUser(records[0])
+      const user = this.transformToAppUser(records[0] as any)
       this.cacheUser(user)
 
       return user
@@ -151,7 +151,7 @@ export class AirtableUserService implements UserService {
       console.log(`✅ User found by email: ${records[0].id}`)
 
       // Transform and cache
-      const user = this.transformToAppUser(records[0])
+      const user = this.transformToAppUser(records[0] as any)
       this.cacheUser(user)
 
       return user
@@ -166,10 +166,7 @@ export class AirtableUserService implements UserService {
 
     try {
       // Transform update data to Airtable format
-      const airtableData = this.client.transformToAirtableFields('users', {
-        ...data,
-        updatedAt: new Date()
-      })
+      const airtableData = this.client.transformToAirtableFields('users', data)
 
       console.log(`📝 Update data:`, airtableData)
 
@@ -182,7 +179,7 @@ export class AirtableUserService implements UserService {
       console.log(`✅ User updated: ${record.id}`)
 
       // Transform and update cache
-      const user = this.transformToAppUser(record)
+      const user = this.transformToAppUser(record as any)
       this.cacheUser(user)
 
       return user

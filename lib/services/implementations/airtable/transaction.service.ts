@@ -28,8 +28,7 @@ export class AirtableTransactionService implements TransactionService {
         ...data,
         // Ensure linked fields are properly formatted
         offer: [data.offerId], // Convert to linked record array
-        status: data.status || 'PENDING',
-        createdAt: new Date()
+        status: data.status || 'PENDING'
       })
 
       console.log(`📝 Airtable transaction data:`, airtableData)
@@ -43,7 +42,7 @@ export class AirtableTransactionService implements TransactionService {
       console.log(`✅ Transaction created with ID: ${record.id}`)
 
       // Transform back to app format
-      const transaction = this.transformToAppTransaction(record)
+      const transaction = this.transformToAppTransaction(record as any)
 
       return transaction
     } catch (error) {
@@ -65,7 +64,7 @@ export class AirtableTransactionService implements TransactionService {
       console.log(`✅ Transaction found: ${record.id}`)
 
       // Transform
-      const transaction = this.transformToAppTransaction(record)
+      const transaction = this.transformToAppTransaction(record as any)
 
       return transaction
     } catch (error: any) {
@@ -121,7 +120,7 @@ export class AirtableTransactionService implements TransactionService {
       console.log(`✅ Found ${records.length} transactions`)
 
       // Transform records
-      const transactions = records.map(record => this.transformToAppTransaction(record))
+      const transactions = records.map(record => this.transformToAppTransaction(record as any))
 
       // Apply client-side pagination if needed
       const offset = filters.offset || 0
@@ -158,10 +157,7 @@ export class AirtableTransactionService implements TransactionService {
 
     try {
       // Transform update data to Airtable format
-      const airtableData = this.client.transformToAirtableFields('transactions', {
-        ...data,
-        updatedAt: new Date()
-      })
+      const airtableData = this.client.transformToAirtableFields('transactions', data)
 
       console.log(`📝 Update data:`, airtableData)
 
@@ -174,7 +170,7 @@ export class AirtableTransactionService implements TransactionService {
       console.log(`✅ Transaction updated: ${record.id}`)
 
       // Transform
-      const transaction = this.transformToAppTransaction(record)
+      const transaction = this.transformToAppTransaction(record as any)
 
       return transaction
     } catch (error: any) {

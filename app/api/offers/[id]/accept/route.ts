@@ -1,33 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from '@clerk/nextjs/server';
-import { db, handleDatabaseError } from '@/services/database.service';
+import { getDatabaseService } from '@/lib/services/factory';
+import { requireAuth } from '@/lib/auth-server';
+import { withErrorHandling } from '@/lib/api-helpers-enhanced';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { userId } = getAuth(request);
+  return withErrorHandling(async () => {
+    const user = await requireAuth();
     const { id } = await params;
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get user from Airtable
-    const user = await db.getUserByClerkId(userId);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    const dbService = getDatabaseService();
 
     // Get the offer
-    const offer = await db.getOfferById(id);
+    const offer = await dbService.offers.findById(id);
     if (!offer) {
       return NextResponse.json(
         { error: 'Offer not found' },
@@ -36,14 +22,7 @@ export async function POST(
     }
 
     // Get the listing to verify ownership
-    if (!offer.listing || offer.listing.length === 0) {
-      return NextResponse.json(
-        { error: 'Offer has no associated listing' },
-        { status: 400 }
-      );
-    }
-
-    const listing = await db.getListingById(offer.listing[0]);
+    const listing = await dbService.listings.findById(offer.listingId);
     if (!listing) {
       return NextResponse.json(
         { error: 'Listing not found' },
@@ -52,8 +31,7 @@ export async function POST(
     }
 
     // Verify the user owns the listing
-    const listingSellerId = Array.isArray(listing.seller) ? listing.seller[0] : listing.seller;
-    if (listingSellerId !== user.id) {
+    if (listing.userId !== user.id) {
       return NextResponse.json(
         { error: 'You are not authorized to accept this offer' },
         { status: 403 }
@@ -69,30 +47,37 @@ export async function POST(
     }
 
     // Accept the offer
-    const updatedOffer = await db.updateOfferStatus(id, 'ACCEPTED');
+    const updatedOffer = await dbService.offers.update(id, {
+      status: 'ACCEPTED',
+    });
 
     // Reject all other pending offers for this listing
-    const allOffers = await db.getOffersByListing(listing.id);
-    const otherPendingOffers = allOffers.filter(
-      o => o.id !== id && o.status === 'PENDING'
-    );
+    try {
+      const allOffersResult = await dbService.offers.findByListingId(listing.id, {
+        status: 'PENDING',
+        limit: 100,
+      });
 
-    await Promise.all(
-      otherPendingOffers.map(o => 
-        db.updateOfferStatus(o.id, 'REJECTED')
-      )
-    );
+      const otherPendingOffers = allOffersResult.items.filter(o => o.id !== id);
+
+      await Promise.all(
+        otherPendingOffers.map(o => 
+          dbService.offers.update(o.id, { status: 'REJECTED' })
+        )
+      );
+
+      // Optionally update listing status to SOLD if quantity matches offer quantity
+      if (offer.quantity >= listing.quantity) {
+        await dbService.listings.updateStatus(listing.id, 'SOLD');
+      }
+    } catch (error) {
+      console.warn('Error updating other offers or listing status:', error);
+      // Continue anyway - the main offer was accepted successfully
+    }
 
     return NextResponse.json({ 
       offer: updatedOffer,
       message: 'Offer accepted successfully'
     });
-
-  } catch (error) {
-    console.error('Error accepting offer:', error);
-    return NextResponse.json(
-      { error: handleDatabaseError(error) },
-      { status: 500 }
-    );
-  }
+  });
 }

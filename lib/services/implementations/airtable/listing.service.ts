@@ -29,8 +29,7 @@ export class AirtableListingService implements ListingService {
         // Ensure seller is properly formatted as link field
         seller: [data.userId], // Convert userId to linked record array
         status: data.status || 'ACTIVE',
-        views: 0, // Initialize view count
-        createdAt: new Date()
+        views: 0 // Initialize view count
       })
 
       console.log(`📝 Airtable listing data:`, airtableData)
@@ -41,10 +40,10 @@ export class AirtableListingService implements ListingService {
         return await table.create(airtableData)
       })
 
-      console.log(`✅ Listing created with ID: ${record.id}`)
+      console.log(`✅ Listing created with ID: ${(record as any).id}`)
 
       // Transform back to app format
-      const listing = this.transformToAppListing(record)
+      const listing = this.transformToAppListing(record as any)
 
       // Cache the listing
       this.cacheListing(listing)
@@ -77,7 +76,7 @@ export class AirtableListingService implements ListingService {
       console.log(`✅ Listing found: ${record.id}`)
 
       // Transform and cache
-      const listing = this.transformToAppListing(record)
+      const listing = this.transformToAppListing(record as any)
       this.cacheListing(listing)
 
       return listing
@@ -99,16 +98,40 @@ export class AirtableListingService implements ListingService {
       const filterFormulas = []
       
       if (filters.userId) {
-        // For linked record fields, we need to use the primary field value, not record ID
         console.log(`🔍 DEBUG: Filtering by userId (record ID): ${filters.userId}`)
-        filterFormulas.push(`FIND("${filters.userId}", {seller} & '') > 0`)
-      }
-      
-      if ((filters as any).userPrimaryField) {
-        // Filter by the primary field value (username/email) instead of record ID
-        const primaryValue = (filters as any).userPrimaryField
-        console.log(`🔍 DEBUG: Filtering by user primary field: ${primaryValue}`)
-        filterFormulas.push(`FIND("${primaryValue}", {seller}) > 0`)
+        
+        // FIXED: Get user's email first, then filter by email (primary field)
+        // This is the root cause fix - Airtable linked records filter by primary field (email), not record ID
+        try {
+          const userService = (await import('../../factory')).getDatabaseService().users
+          const user = await userService.findById(filters.userId)
+          
+          if (user && user.email) {
+            console.log(`🔍 DEBUG: Found user email for filtering: ${user.email}`)
+            // Use direct comparison with email (most reliable for Airtable)
+            filterFormulas.push(`{seller} = "${user.email}"`)
+          } else {
+            console.log(`❌ DEBUG: User not found or no email for userId: ${filters.userId}`)
+            // If user not found, return empty results instead of erroring
+            return {
+              items: [],
+              total: 0,
+              limit: filters.limit || 50,
+              offset: filters.offset || 0,
+              hasMore: false
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error looking up user for filtering: ${error}`)
+          // If lookup fails, return empty results instead of erroring
+          return {
+            items: [],
+            total: 0,
+            limit: filters.limit || 50,
+            offset: filters.offset || 0,
+            hasMore: false
+          }
+        }
       }
       
       if (filters.status) {
@@ -153,33 +176,8 @@ export class AirtableListingService implements ListingService {
 
       console.log(`✅ Found ${records.length} listings`)
 
-      // Debug: If we have filters.userId but found 0 records, let's try without filter
-      if (filters.userId && records.length === 0) {
-        console.log(`🔍 DEBUG: No listings found with userId filter, trying query without filters...`)
-        
-        const debugRecords = await this.client.executeWithRateLimit(async () => {
-          const table = this.client.getTable(AIRTABLE_TABLES.LISTINGS)
-          const query = table.select({
-            maxRecords: 3 // Just get a few to check structure
-          })
-          return await query.all()
-        })
-        
-        console.log(`🔍 DEBUG: Found ${debugRecords.length} total listings in database`)
-        if (debugRecords.length > 0) {
-          console.log(`🔍 DEBUG: Sample listing data:`)
-          debugRecords.forEach((record, index) => {
-            const sellerData = record.get('seller')
-            const allFields = record.fields
-            console.log(`   Listing ${index + 1}: ID=${record.id}`)
-            console.log(`     seller field: ${JSON.stringify(sellerData)}`)
-            console.log(`     all fields: ${Object.keys(allFields).join(', ')}`)
-          })
-        }
-      }
-
       // Transform records
-      const listings = records.map(record => this.transformToAppListing(record))
+      const listings = records.map(record => this.transformToAppListing(record as any))
 
       // Cache listings
       listings.forEach(listing => this.cacheListing(listing))
@@ -218,7 +216,7 @@ export class AirtableListingService implements ListingService {
     
     return await this.findMany({
       ...filters,
-      userPrimaryField: userPrimaryValue,
+      userId: userPrimaryValue,
       limit: filters?.limit || 50,
       offset: filters?.offset || 0
     })
@@ -229,10 +227,7 @@ export class AirtableListingService implements ListingService {
 
     try {
       // Transform update data to Airtable format
-      const airtableData = this.client.transformToAirtableFields('listings', {
-        ...data,
-        updatedAt: new Date()
-      })
+      const airtableData = this.client.transformToAirtableFields('listings', data)
 
       console.log(`📝 Update data:`, airtableData)
 
@@ -245,7 +240,7 @@ export class AirtableListingService implements ListingService {
       console.log(`✅ Listing updated: ${record.id}`)
 
       // Transform and update cache
-      const listing = this.transformToAppListing(record)
+      const listing = this.transformToAppListing(record as any)
       this.cacheListing(listing)
 
       return listing

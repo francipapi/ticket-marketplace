@@ -17,7 +17,10 @@ import { getDatabaseService } from '@/lib/services/factory'
 const CreateListingSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
   eventName: z.string().min(1, 'Event name is required').max(200, 'Event name too long'),
-  eventDate: z.string().transform((str) => new Date(str)),
+  eventDate: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]),
   venue: z.string().optional(),
   priceInCents: z.number().min(100, 'Minimum price is $1.00').max(10000000, 'Maximum price is $100,000'),
   quantity: z.number().min(1, 'Minimum quantity is 1').max(100, 'Maximum quantity is 100'),
@@ -31,7 +34,10 @@ const CreateListingSchema = z.object({
 const UpdateListingSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   eventName: z.string().min(1).max(200).optional(),
-  eventDate: z.string().transform((str) => new Date(str)).optional(),
+  eventDate: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]).optional(),
   venue: z.string().optional(),
   priceInCents: z.number().min(100).max(10000000).optional(),
   quantity: z.number().min(1).max(100).optional(),
@@ -52,7 +58,6 @@ const ListingFiltersSchema = z.object({
 })
 
 type CreateListingRequest = z.infer<typeof CreateListingSchema>
-type UpdateListingRequest = z.infer<typeof UpdateListingSchema>
 type ListingFiltersRequest = z.infer<typeof ListingFiltersSchema>
 
 // Create new listing
@@ -84,7 +89,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         title: data.title,
         eventName: data.eventName,
-        eventDate: data.eventDate,
+        eventDate: typeof data.eventDate === 'string' ? new Date(data.eventDate) : data.eventDate,
         venue: data.venue,
         priceInCents: data.priceInCents,
         quantity: data.quantity,

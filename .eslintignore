@@ -1,0 +1,27 @@
+# Build outputs
+.next/
+.turbo/
+.swc/
+.cache/
+dist/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env*
+
+# Logs
+*.log
+
+# Generated files
+*.generated.*
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

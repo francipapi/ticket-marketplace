@@ -156,7 +156,7 @@ export default function CreateListingPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/listings/airtable', {
+      const response = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,7 +164,7 @@ export default function CreateListingPage() {
           eventName: formData.eventName.trim(),
           eventDate: new Date(formData.eventDate).toISOString(),
           venue: formData.venue.trim() || undefined,
-          price: Math.round(price * 100), // Convert to cents
+          priceInCents: Math.round(price * 100), // Convert to cents
           quantity,
           description: formData.description.trim() || undefined,
         }),

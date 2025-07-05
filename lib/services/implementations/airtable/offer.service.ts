@@ -29,8 +29,7 @@ export class AirtableOfferService implements OfferService {
         // Ensure linked fields are properly formatted
         listing: [data.listingId], // Convert to linked record array
         buyer: [data.buyerId], // Convert to linked record array
-        status: data.status || 'PENDING',
-        createdAt: new Date()
+        status: data.status || 'PENDING'
       })
 
       console.log(`📝 Airtable offer data:`, airtableData)
@@ -44,7 +43,7 @@ export class AirtableOfferService implements OfferService {
       console.log(`✅ Offer created with ID: ${record.id}`)
 
       // Transform back to app format
-      const offer = this.transformToAppOffer(record)
+      const offer = this.transformToAppOffer(record as any)
 
       return offer
     } catch (error) {
@@ -66,7 +65,7 @@ export class AirtableOfferService implements OfferService {
       console.log(`✅ Offer found: ${record.id}`)
 
       // Transform
-      const offer = this.transformToAppOffer(record)
+      const offer = this.transformToAppOffer(record as any)
 
       return offer
     } catch (error: any) {
@@ -88,7 +87,39 @@ export class AirtableOfferService implements OfferService {
       
       if (filters.listingId) {
         console.log(`🔍 DEBUG: Filtering by listingId (record ID): ${filters.listingId}`)
-        filterFormulas.push(`FIND("${filters.listingId}", {listing} & '') > 0`)
+        
+        // FIXED: Get listing's title first, then filter by title (primary field)
+        // Airtable linked records filter by primary field (title for listings), not record ID
+        try {
+          const listingService = (await import('../../factory')).getDatabaseService().listings
+          const listing = await listingService.findById(filters.listingId)
+          
+          if (listing && listing.title) {
+            console.log(`🔍 DEBUG: Found listing title for filtering: ${listing.title}`)
+            // Use direct comparison with title (most reliable for Airtable)
+            filterFormulas.push(`{listing} = "${listing.title}"`)
+          } else {
+            console.log(`❌ DEBUG: Listing not found or no title for listingId: ${filters.listingId}`)
+            // If listing not found, return empty results instead of erroring
+            return {
+              items: [],
+              total: 0,
+              limit: filters.limit || 50,
+              offset: filters.offset || 0,
+              hasMore: false
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error looking up listing for filtering: ${error}`)
+          // If lookup fails, return empty results instead of erroring
+          return {
+            items: [],
+            total: 0,
+            limit: filters.limit || 50,
+            offset: filters.offset || 0,
+            hasMore: false
+          }
+        }
       }
       
       if ((filters as any).listingPrimaryField) {
@@ -100,7 +131,39 @@ export class AirtableOfferService implements OfferService {
       
       if (filters.buyerId) {
         console.log(`🔍 DEBUG: Filtering by buyerId (record ID): ${filters.buyerId}`)
-        filterFormulas.push(`FIND("${filters.buyerId}", {buyer} & '') > 0`)
+        
+        // FIXED: Get buyer's email first, then filter by email (primary field)
+        // Same fix as listings - Airtable linked records filter by primary field (email), not record ID
+        try {
+          const userService = (await import('../../factory')).getDatabaseService().users
+          const buyer = await userService.findById(filters.buyerId)
+          
+          if (buyer && buyer.email) {
+            console.log(`🔍 DEBUG: Found buyer email for filtering: ${buyer.email}`)
+            // Use direct comparison with email (most reliable for Airtable)
+            filterFormulas.push(`{buyer} = "${buyer.email}"`)
+          } else {
+            console.log(`❌ DEBUG: Buyer not found or no email for buyerId: ${filters.buyerId}`)
+            // If buyer not found, return empty results instead of erroring
+            return {
+              items: [],
+              total: 0,
+              limit: filters.limit || 50,
+              offset: filters.offset || 0,
+              hasMore: false
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error looking up buyer for filtering: ${error}`)
+          // If lookup fails, return empty results instead of erroring
+          return {
+            items: [],
+            total: 0,
+            limit: filters.limit || 50,
+            offset: filters.offset || 0,
+            hasMore: false
+          }
+        }
       }
       
       if ((filters as any).buyerPrimaryField) {
@@ -133,7 +196,7 @@ export class AirtableOfferService implements OfferService {
       console.log(`✅ Found ${records.length} offers`)
 
       // Transform records
-      const offers = records.map(record => this.transformToAppOffer(record))
+      const offers = records.map(record => this.transformToAppOffer(record as any))
 
       // Apply client-side pagination if needed
       const offset = filters.offset || 0
@@ -169,7 +232,7 @@ export class AirtableOfferService implements OfferService {
     
     return await this.findMany({
       ...filters,
-      listingPrimaryField: listingPrimaryValue,
+      listingId: listingPrimaryValue, // Use listingId instead
       limit: filters?.limit || 50,
       offset: filters?.offset || 0
     })
@@ -191,7 +254,7 @@ export class AirtableOfferService implements OfferService {
     
     return await this.findMany({
       ...filters,
-      buyerPrimaryField: buyerPrimaryValue,
+      buyerId: buyerPrimaryValue, // Use buyerId instead
       limit: filters?.limit || 50,
       offset: filters?.offset || 0
     })
@@ -202,10 +265,7 @@ export class AirtableOfferService implements OfferService {
 
     try {
       // Transform update data to Airtable format
-      const airtableData = this.client.transformToAirtableFields('offers', {
-        ...data,
-        updatedAt: new Date()
-      })
+      const airtableData = this.client.transformToAirtableFields('offers', data)
 
       console.log(`📝 Update data:`, airtableData)
 
@@ -218,7 +278,7 @@ export class AirtableOfferService implements OfferService {
       console.log(`✅ Offer updated: ${record.id}`)
 
       // Transform
-      const offer = this.transformToAppOffer(record)
+      const offer = this.transformToAppOffer(record as any)
 
       return offer
     } catch (error: any) {

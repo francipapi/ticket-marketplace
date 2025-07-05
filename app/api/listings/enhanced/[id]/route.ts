@@ -17,7 +17,10 @@ import { getDatabaseService } from '@/lib/services/factory'
 const UpdateListingSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   eventName: z.string().min(1).max(200).optional(),
-  eventDate: z.string().transform((str) => new Date(str)).optional(),
+  eventDate: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date()
+  ]).optional(),
   venue: z.string().optional(),
   priceInCents: z.number().min(100).max(10000000).optional(),
   quantity: z.number().min(1).max(100).optional(),
@@ -25,7 +28,7 @@ const UpdateListingSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE', 'SOLD', 'DELISTED']).optional()
 })
 
-type UpdateListingRequest = z.infer<typeof UpdateListingSchema>
+// type UpdateListingRequest = z.infer<typeof UpdateListingSchema> // Keep for future use
 
 // Get individual listing
 export async function GET(
@@ -201,8 +204,14 @@ export async function PATCH(
         )
       }
       
-      // Update listing
-      const updatedListing = await dbService.listings.update(id, data)
+      // Update listing - ensure eventDate is properly converted
+      const updateData: any = {
+        ...data,
+        ...(data.eventDate && {
+          eventDate: typeof data.eventDate === 'string' ? new Date(data.eventDate) : data.eventDate
+        })
+      }
+      const updatedListing = await dbService.listings.update(id, updateData)
       
       const responseData = {
         listing: {

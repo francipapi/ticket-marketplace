@@ -43,7 +43,7 @@ export default function EditListingPage() {
 
   const fetchListing = useCallback(async () => {
     try {
-      const response = await fetch(`/api/listings/airtable/${params.id}`);
+      const response = await fetch(`/api/listings/${params.id}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -179,14 +179,14 @@ export default function EditListingPage() {
         eventName: formData.eventName.trim(),
         eventDate: new Date(formData.eventDate).toISOString(),
         venue: formData.venue.trim() || undefined,
-        price: Math.round(price * 100), // Convert to cents
+        priceInCents: Math.round(price * 100), // Convert to cents
         quantity,
         description: formData.description.trim() || undefined,
       };
       
       console.log('Sending update request with data:', requestBody);
       
-      const response = await fetch(`/api/listings/airtable/${listing.id}`, {
+      const response = await fetch(`/api/listings/${listing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),

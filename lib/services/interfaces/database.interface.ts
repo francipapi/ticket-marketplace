@@ -111,6 +111,7 @@ export interface UpdateListingData {
   quantity?: number
   description?: string
   status?: 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DELISTED'
+  views?: number
 }
 
 export interface CreateOfferData {

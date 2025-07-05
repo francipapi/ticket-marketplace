@@ -41,7 +41,7 @@ async function debugAirtableData() {
       
       if (allListingsResult.items.length > 0) {
         console.log('\n   Sample listing structures:')
-        allListingsResult.items.forEach((listing, index) => {
+        allListingsResult.items.forEach((listing: any, index: number) => {
           console.log(`   Listing ${index + 1}:`)
           console.log(`     ID: ${listing.id}`)
           console.log(`     Title: "${listing.title}"`)
@@ -53,7 +53,7 @@ async function debugAirtableData() {
         })
         
         // Check if any listing has our expected user ID
-        const userListings = allListingsResult.items.filter(listing => 
+        const userListings = allListingsResult.items.filter((listing: any) => 
           listing.userId === expectedUserId || 
           listing.id === expectedUserId ||
           JSON.stringify(listing).includes(expectedUserId)
@@ -63,7 +63,7 @@ async function debugAirtableData() {
         
         if (userListings.length > 0) {
           console.log('   ✅ Found user listings! The filtering issue is in the query syntax.')
-          userListings.forEach(listing => {
+          userListings.forEach((listing: any) => {
             console.log(`      - "${listing.title}" (ID: ${listing.id})`)
           })
         } else {

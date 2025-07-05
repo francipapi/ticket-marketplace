@@ -41,7 +41,7 @@ export default function ListingsPage() {
         ...(search && { search }),
       });
 
-      const response = await fetch(`/api/listings/airtable?${params}`);
+      const response = await fetch(`/api/listings?${params}`);
       const result = await response.json();
 
       // Handle both old and new response formats

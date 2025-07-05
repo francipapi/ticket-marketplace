@@ -1,100 +1,94 @@
-import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
-import { createResponse, createErrorResponse, requireAuth } from '@/lib/api-helpers';
+import { NextRequest, NextResponse } from 'next/server';
+import { getDatabaseService, getPaymentService } from '@/lib/services/factory';
+import { requireAuth } from '@/lib/auth-server';
+import { withErrorHandling } from '@/lib/api-helpers-enhanced';
 
 // POST /api/payments/mock-pay - Mock payment processing
 export async function POST(request: NextRequest) {
-  try {
+  return withErrorHandling(async () => {
     const user = await requireAuth();
     const { offerId } = await request.json();
 
     if (!offerId) {
-      return createErrorResponse('Offer ID is required');
+      return NextResponse.json(
+        { error: 'Offer ID is required' },
+        { status: 400 }
+      );
     }
 
+    const dbService = getDatabaseService();
+    const paymentService = getPaymentService();
+
     // Find and validate offer
-    const offer = await prisma.offer.findUnique({
-      where: { id: offerId },
-      include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            userId: true,
-            quantity: true,
-            status: true,
-          },
-        },
-        buyer: {
-          select: {
-            id: true,
-            username: true,
-          },
-        },
-      },
-    });
+    const offer = await dbService.offers.findById(offerId);
 
     if (!offer) {
-      return createErrorResponse('Offer not found', 404);
+      return NextResponse.json(
+        { error: 'Offer not found' },
+        { status: 404 }
+      );
     }
 
     if (offer.buyerId !== user.id) {
-      return createErrorResponse('Not authorized to pay for this offer', 403);
+      return NextResponse.json(
+        { error: 'Not authorized to pay for this offer' },
+        { status: 403 }
+      );
     }
 
-    if (offer.status !== 'accepted') {
-      return createErrorResponse('Offer must be accepted before payment', 400);
+    if (offer.status !== 'ACCEPTED') {
+      return NextResponse.json(
+        { error: 'Offer must be accepted before payment' },
+        { status: 400 }
+      );
     }
 
-    if (offer.isPaid) {
-      return createErrorResponse('Offer has already been paid', 400);
+    // Get the listing
+    const listing = await dbService.listings.findById(offer.listingId);
+    if (!listing) {
+      return NextResponse.json(
+        { error: 'Associated listing not found' },
+        { status: 404 }
+      );
     }
 
-    // Simulate payment processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock payment success (in real implementation, this would be handled by Stripe webhooks)
-    const updatedOffer = await prisma.offer.update({
-      where: { id: offerId },
-      data: {
-        isPaid: true,
-        paidAt: new Date(),
-        status: 'completed',
-      },
-      include: {
-        listing: {
-          select: {
-            id: true,
-            title: true,
-            eventName: true,
-            eventDate: true,
-            venue: true,
-            ticketPath: true,
-            originalFileName: true,
-          },
-        },
-      },
+    // Simulate payment processing using payment service
+    const mockPaymentIntent = await paymentService.createPaymentIntent({
+      amount: offer.offerPriceInCents,
+      sellerId: listing.userId,
+      buyerId: user.id,
+      listingId: listing.id,
+      offerId: offerId,
     });
 
-    // Update listing quantity
-    await prisma.listing.update({
-      where: { id: offer.listing.id },
-      data: {
-        quantity: {
-          decrement: offer.quantity,
-        },
-        // Mark as sold if quantity reaches 0
-        status: offer.listing.quantity <= offer.quantity ? 'sold' : 'active',
-      },
-    });
+    // Simulate payment completion
+    if (!paymentService.simulatePayment) {
+      throw new Error('Payment service does not support simulation');
+    }
+    const processedPayment = await paymentService.simulatePayment(mockPaymentIntent.id);
 
-    return createResponse({
-      offer: updatedOffer,
-      message: 'Payment successful! You can now download your tickets.',
-      downloadAvailable: true,
-    });
-  } catch (error) {
-    console.error('Mock payment error:', error);
-    return createErrorResponse('Payment processing failed', 500);
-  }
+    if (processedPayment.status === 'succeeded') {
+      // Update offer status
+      const updatedOffer = await dbService.offers.update(offerId, {
+        status: 'COMPLETED',
+      });
+
+      // Update listing quantity if needed
+      if (offer.quantity >= listing.quantity) {
+        await dbService.listings.updateStatus(listing.id, 'SOLD');
+      }
+
+      return NextResponse.json({
+        offer: updatedOffer,
+        payment: processedPayment,
+        message: 'Payment successful! You can now download your tickets.',
+        downloadAvailable: true,
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Payment failed', details: processedPayment },
+        { status: 400 }
+      );
+    }
+  });
 }

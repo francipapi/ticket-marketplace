@@ -36,8 +36,12 @@ export const AIRTABLE_TABLES = {
 } as const
 
 // Airtable field mappings
+// Based on CLAUDE.md documentation:
+// - Users, Transactions: Use camelCase field names
+// - Listings, Offers: Use Capitalized field names with spaces
 export const AIRTABLE_FIELD_MAPPINGS = {
   users: {
+    // Users table uses camelCase
     clerkId: 'clerkId',
     email: 'email', 
     username: 'username',
@@ -45,40 +49,40 @@ export const AIRTABLE_FIELD_MAPPINGS = {
     isVerified: 'isVerified',
     totalSales: 'totalSales',
     stripeAccountId: 'stripeAccountId'
-    // Note: createdTime is automatically added by Airtable API as metadata, not a field
   },
   listings: {
+    // Listings table - based on CLAUDE.md actual field names
     title: 'title',
     eventName: 'eventName', 
     eventDate: 'eventDate',
-    priceInCents: 'price',
+    priceInCents: 'price', // price field stores cents
     quantity: 'quantity',
     status: 'status',
     seller: 'seller', // Link to Users table
-    ticketFiles: 'ticketFile',
+    ticketFiles: 'ticketFiles',
     description: 'description',
     venue: 'venue',
     views: 'views'
   },
   offers: {
+    // Offers table - based on CLAUDE.md actual field names
     offerCode: 'offerCode',
-    listing: 'listing', // Link to Listings table - matches actual lowercase field name
-    buyer: 'buyer', // Link to Users table - matches actual lowercase field name  
-    offerPriceInCents: 'offerPrice', // matches actual field name
-    quantity: 'quantity', // matches actual lowercase field name
-    status: 'status', // matches actual lowercase field name
-    messageTemplate: 'message', // matches actual field name
-    customMessage: 'customMessage' // matches actual field name
+    listing: 'listing', // Link to Listings table
+    buyer: 'buyer', // Link to Users table  
+    offerPriceInCents: 'offerPrice', // offerPrice field stores cents
+    quantity: 'quantity',
+    status: 'status',
+    messageTemplate: 'message',
+    customMessage: 'customMessage'
   },
   transactions: {
+    // Transactions table - actual fields from Airtable  
+    transactionId: 'transactionId', // Formula field
     offer: 'offer', // Link to Offers table
     amount: 'amount',
-    platformFee: 'platformFee',
-    sellerPayout: 'sellerPayout',
     status: 'status',
     stripePaymentId: 'stripePaymentId',
     completedAt: 'completedAt'
-    // Note: createdTime is automatically added by Airtable API as metadata, not a field
   }
 } as const
 
@@ -98,48 +102,45 @@ export interface UserRecord extends FieldSet {
 
 // Listing record type  
 export interface ListingRecord extends FieldSet {
-  'Title': string
-  'Event Name': string
-  'Event Date': string
-  'Price (Cents)': number
-  'Quantity': number
-  'Status': 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DELISTED'
-  'Seller': string[] // Link field - array of record IDs
-  'Ticket Files'?: Array<{
+  'title': string
+  'eventName': string
+  'eventDate': string
+  'price': number // Stores price in cents
+  'quantity': number
+  'status': 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DELISTED'
+  'seller': string[] // Link field - array of record IDs
+  'ticketFiles'?: Array<{
     id: string
     url: string
     filename: string
     size: number
     type: string
   }>
-  'Description'?: string
-  'Venue'?: string
-  'Views'?: number
-  'Created At'?: string
+  'description'?: string
+  'venue'?: string
+  'views'?: number
 }
 
 // Offer record type
 export interface OfferRecord extends FieldSet {
-  'Listing': string[] // Link field
-  'Buyer': string[] // Link field  
-  'Offer Price (Cents)': number
-  'Quantity': number
-  'Status': 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'COMPLETED'
-  'Message Template': 'asking_price' | 'make_offer' | 'check_availability'
-  'Custom Message'?: string
-  'Created At'?: string
+  'offerCode'?: string // Formula field
+  'listing': string[] // Link field
+  'buyer': string[] // Link field  
+  'offerPrice': number // Stores price in cents
+  'quantity': number
+  'status': 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'COMPLETED'
+  'message': 'Buy at asking price' | 'Make offer' | 'Check availability'
+  'customMessage'?: string
 }
 
 // Transaction record type
 export interface TransactionRecord extends FieldSet {
+  'transactionId'?: string // Formula field
   'offer': string[] // Link field
   'amount': number
-  'platformFee': number
-  'sellerPayout': number
   'status': 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
   'stripePaymentId'?: string
   'completedAt'?: string
-  'createdAt'?: string
 }
 
 export class AirtableClient {
@@ -202,19 +203,21 @@ export class AirtableClient {
   async executeWithRateLimit<T>(operation: () => Promise<T>): Promise<T> {
     this.initialize()
     
-    return this.queue.add(async () => {
+    const result = await this.queue.add(async (): Promise<T> => {
       const start = Date.now()
       try {
-        const result = await operation()
+        const operationResult = await operation()
         const duration = Date.now() - start
         console.log(`⚡ Airtable operation completed in ${duration}ms`)
-        return result
+        return operationResult
       } catch (error) {
         const duration = Date.now() - start
         console.error(`❌ Airtable operation failed after ${duration}ms:`, error)
         throw error
       }
     })
+    
+    return result as T
   }
 
   // Get table reference
@@ -311,10 +314,10 @@ export class AirtableClient {
   // Field transformation utilities
   transformToAirtableFields<T extends AirtableTableName>(
     tableName: T, 
-    data: Record<string, any>
-  ): Record<string, any> {
+    data: { [key: string]: any }
+  ): { [key: string]: any } {
     const mapping = AIRTABLE_FIELD_MAPPINGS[tableName]
-    const transformed: Record<string, any> = {}
+    const transformed: { [key: string]: any } = {}
     
     for (const [apiField, airtableField] of Object.entries(mapping)) {
       if (data[apiField] !== undefined) {
@@ -323,10 +326,20 @@ export class AirtableClient {
         // Special handling for dates
         if (apiField.includes('Date') || apiField.includes('At')) {
           if (value instanceof Date) {
-            value = value.toISOString()
+            // For eventDate field, use just the date part (YYYY-MM-DD)
+            if (airtableField === 'eventDate') {
+              value = value.toISOString().split('T')[0]
+            } else {
+              value = value.toISOString()
+            }
           } else if (typeof value === 'string') {
             // Ensure proper date format
-            value = new Date(value).toISOString()
+            const dateObj = new Date(value)
+            if (airtableField === 'eventDate') {
+              value = dateObj.toISOString().split('T')[0]
+            } else {
+              value = dateObj.toISOString()
+            }
           }
         }
         
@@ -338,6 +351,16 @@ export class AirtableClient {
           }
         }
         
+        // Special handling for message template - API uses snake_case, Airtable uses human readable
+        if (apiField === 'messageTemplate' && airtableField === 'message') {
+          const messageMapping: { [key: string]: string } = {
+            'asking_price': 'Buy at asking price',
+            'make_offer': 'Make offer', 
+            'check_availability': 'Check availability'
+          }
+          value = messageMapping[value] || value
+        }
+        
         transformed[airtableField] = value
       }
     }
@@ -347,10 +370,10 @@ export class AirtableClient {
 
   transformFromAirtableFields<T extends AirtableTableName>(
     tableName: T,
-    record: Record<FieldSet>
-  ): Record<string, any> {
+    record: any
+  ): { [key: string]: any } {
     const mapping = AIRTABLE_FIELD_MAPPINGS[tableName]
-    const transformed: Record<string, any> = {}
+    const transformed: { [key: string]: any } = {}
     
     for (const [apiField, airtableField] of Object.entries(mapping)) {
       if (record.get && record.get(airtableField) !== undefined) {
@@ -369,6 +392,16 @@ export class AirtableClient {
           if (typeof value === 'string') {
             value = new Date(value)
           }
+        }
+        
+        // Special handling for message template - Airtable uses human readable, API uses snake_case
+        if (airtableField === 'message' && apiField === 'messageTemplate') {
+          const reverseMessageMapping: { [key: string]: string } = {
+            'Buy at asking price': 'asking_price',
+            'Make offer': 'make_offer',
+            'Check availability': 'check_availability'
+          }
+          value = reverseMessageMapping[value] || value
         }
         
         transformed[apiField] = value
