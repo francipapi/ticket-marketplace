@@ -20,8 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BuyNowDialog } from '@/components/offers/buy-now-dialog';
-import { PlaceBidDialog } from '@/components/offers/place-bid-dialog';
+import { UnifiedPurchaseDialog } from '@/components/offers/unified-purchase-dialog';
 import { format } from 'date-fns';
 
 interface Listing {
@@ -62,8 +61,7 @@ export default function ListingDetailsPage() {
   const { user } = useAuth();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showBuyNow, setShowBuyNow] = useState(false);
-  const [showPlaceBid, setShowPlaceBid] = useState(false);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
   // Enable debug mode with URL parameter
@@ -413,25 +411,14 @@ export default function ListingDetailsPage() {
                 </div>
                 
                 {canMakeOffer ? (
-                  <div className="space-y-3">
-                    <Button
-                      size="lg"
-                      className="w-full bg-purple-700 hover:bg-purple-800"
-                      onClick={() => setShowBuyNow(true)}
-                    >
-                      <CreditCard className="mr-2 h-5 w-5" />
-                      Buy Now
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
-                      onClick={() => setShowPlaceBid(true)}
-                    >
-                      <MessageSquare className="mr-2 h-5 w-5" />
-                      Place Bid
-                    </Button>
-                  </div>
+                  <Button
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-800 hover:to-purple-700 hover:scale-[1.02] transform transition-all duration-200"
+                    onClick={() => setShowPurchaseDialog(true)}
+                  >
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Purchase Tickets
+                  </Button>
                 ) : isOwner ? (
                   <div className="text-center">
                     <p className="text-gray-600 mb-4">This is your listing</p>
@@ -453,12 +440,19 @@ export default function ListingDetailsPage() {
                 )}
                 
                 {/* Urgency Indicator */}
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-orange-600">
-                    <User className="inline w-4 h-4 mr-1" />
-                    {Math.floor(Math.random() * 5) + 2} others viewing this listing
-                  </p>
-                </div>
+                {canMakeOffer && (
+                  <div className="mt-4 space-y-3">
+                    <div className="text-center">
+                      <p className="text-sm text-orange-600">
+                        <User className="inline w-4 h-4 mr-1" />
+                        {Math.floor(Math.random() * 5) + 2} others viewing this listing
+                      </p>
+                    </div>
+                    <div className="text-center text-xs text-gray-500">
+                      Or choose to make an offer below asking price
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
             
@@ -485,8 +479,8 @@ export default function ListingDetailsPage() {
           </div>
         </div>
 
-        {/* Modals */}
-        <BuyNowDialog
+        {/* Unified Purchase Modal */}
+        <UnifiedPurchaseDialog
           listing={{
             id: listing.id,
             title: listing.title,
@@ -500,25 +494,8 @@ export default function ListingDetailsPage() {
               rating: seller?.rating || 5
             }
           }}
-          open={showBuyNow}
-          onClose={() => setShowBuyNow(false)}
-        />
-        <PlaceBidDialog
-          listing={{
-            id: listing.id,
-            title: listing.title,
-            eventName: listing.eventName,
-            eventDate: listing.eventDate,
-            priceInCents: listing.priceInCents,
-            quantity: listing.quantity,
-            seller: {
-              id: seller?.id || '',
-              username: seller?.username || '',
-              rating: seller?.rating || 5
-            }
-          }}
-          open={showPlaceBid}
-          onClose={() => setShowPlaceBid(false)}
+          open={showPurchaseDialog}
+          onClose={() => setShowPurchaseDialog(false)}
         />
       </div>
     </div>

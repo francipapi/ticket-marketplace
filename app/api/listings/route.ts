@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const eventDate = searchParams.get('eventDate');
     const userId = searchParams.get('userId'); // For dashboard - show user's listings
+    
+    // Additional filter parameters
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const venue = searchParams.get('venue');
+    const ticketType = searchParams.get('ticketType');
 
     const dbService = getDatabaseService();
     
@@ -47,6 +55,31 @@ export async function GET(request: NextRequest) {
 
     if (eventDate) {
       filters.eventDateFrom = new Date(eventDate);
+    }
+    
+    // Apply additional filters
+    if (minPrice) {
+      filters.priceMin = parseInt(minPrice);
+    }
+    
+    if (maxPrice) {
+      filters.priceMax = parseInt(maxPrice);
+    }
+    
+    if (dateFrom) {
+      filters.eventDateFrom = new Date(dateFrom);
+    }
+    
+    if (dateTo) {
+      filters.eventDateTo = new Date(dateTo);
+    }
+    
+    if (venue) {
+      filters.venue = venue;
+    }
+    
+    if (ticketType) {
+      filters.ticketType = ticketType;
     }
 
     const result = await dbService.listings.findMany(filters);

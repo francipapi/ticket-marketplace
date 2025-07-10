@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
+import { getRelativePathFromRoot, getUserUploadDir } from './utils/path';
 
 export interface UploadedFile {
   id: string;
@@ -14,10 +15,10 @@ export interface UploadedFile {
 }
 
 export class FileService {
-  private uploadDir = process.env.UPLOAD_DIR || './public/uploads';
+  private uploadDir = process.env.UPLOAD_DIR || path.join('.', 'public', 'uploads');
   
   async ensureUploadDir(userId: string) {
-    const userDir = path.join(this.uploadDir, userId);
+    const userDir = getUserUploadDir(userId);
     await fs.mkdir(userDir, { recursive: true });
     return userDir;
   }
@@ -76,7 +77,10 @@ export class FileService {
         </svg>
       `;
       
-      const watermarkedPath = imagePath.replace(/\.([^.]+)$/, '_watermarked.$1');
+      const ext = path.extname(imagePath);
+      const base = path.basename(imagePath, ext);
+      const dir = path.dirname(imagePath);
+      const watermarkedPath = path.join(dir, `${base}_watermarked${ext}`);
       
       await image
         .composite([{
@@ -93,7 +97,7 @@ export class FileService {
   }
   
   private getRelativePath(fullPath: string): string {
-    return fullPath.replace(process.cwd(), '').replace(/^\//, '');
+    return getRelativePathFromRoot(fullPath);
   }
   
   async deleteFile(filePath: string): Promise<boolean> {

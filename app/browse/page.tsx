@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useListings } from '@/lib/hooks/use-listings'
-import { useDebouncedSearch } from '@/lib/hooks/use-search'
+// Removed unused import: useDebouncedSearch
 import { Listing, ListingFilters } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
 import Link from 'next/link'
@@ -25,12 +25,24 @@ export default function BrowsePage() {
     viewMode: 'grid'
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { data: listingsData, isLoading, error, refetch } = useListings(filters)
-  const { query, updateQuery, results: searchResults } = useDebouncedSearch()
 
-  // Use search results if searching, otherwise use regular listings
-  const listings = searchResults?.listings || listingsData?.data || []
+  // Filter listings based on search query
+  const listings = useMemo(() => {
+    const allListings = listingsData?.data || []
+    
+    if (!searchQuery.trim()) return allListings
+    
+    const query = searchQuery.toLowerCase()
+    return allListings.filter(listing => 
+      listing.title.toLowerCase().includes(query) ||
+      listing.eventName.toLowerCase().includes(query) ||
+      listing.description?.toLowerCase().includes(query) ||
+      listing.venue?.toLowerCase().includes(query)
+    )
+  }, [listingsData?.data, searchQuery])
 
   // Group listings based on groupBy filter
   const groupedListings = useMemo(() => {
@@ -68,7 +80,7 @@ export default function BrowsePage() {
       groupBy: 'event',
       viewMode: 'grid'
     })
-    updateQuery('')
+    setSearchQuery('')
   }
 
   // Refetch listings when page becomes visible (e.g., after delisting)
@@ -103,8 +115,8 @@ export default function BrowsePage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
               placeholder="Search events, venues, or ticket types..."
-              value={query}
-              onChange={(e) => updateQuery(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-3 text-lg"
             />
           </div>
@@ -179,7 +191,7 @@ export default function BrowsePage() {
             <div className="flex-1" />
 
             {/* Clear Filters */}
-            {Boolean(query || Object.keys(filters).some(key => 
+            {Boolean(searchQuery || Object.keys(filters).some(key => 
               key !== 'groupBy' && key !== 'viewMode' && filters[key as keyof FilterState]
             )) && (
               <Button variant="ghost" onClick={clearFilters} className="text-sm">
@@ -199,7 +211,7 @@ export default function BrowsePage() {
           ) : error ? (
             <ErrorState />
           ) : listings.length === 0 ? (
-            <EmptyState hasFilters={Boolean(query || Object.keys(filters).some(key => 
+            <EmptyState hasFilters={Boolean(searchQuery || Object.keys(filters).some(key => 
               key !== 'groupBy' && key !== 'viewMode' && filters[key as keyof FilterState]
             ))} />
           ) : (
@@ -241,8 +253,8 @@ function FilterPanel({ filters, onChange }: FilterPanelProps) {
             <Input
               type="number"
               placeholder="0"
-              value={filters.minPrice || ''}
-              onChange={(e) => onChange('minPrice', e.target.value ? Number(e.target.value) : undefined)}
+              value={filters.minPrice ? (filters.minPrice / 100).toString() : ''}
+              onChange={(e) => onChange('minPrice', e.target.value ? Math.round(Number(e.target.value) * 100) : undefined)}
             />
           </div>
           <div>
@@ -252,8 +264,8 @@ function FilterPanel({ filters, onChange }: FilterPanelProps) {
             <Input
               type="number"
               placeholder="500"
-              value={filters.maxPrice || ''}
-              onChange={(e) => onChange('maxPrice', e.target.value ? Number(e.target.value) : undefined)}
+              value={filters.maxPrice ? (filters.maxPrice / 100).toString() : ''}
+              onChange={(e) => onChange('maxPrice', e.target.value ? Math.round(Number(e.target.value) * 100) : undefined)}
             />
           </div>
 

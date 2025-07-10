@@ -13,7 +13,7 @@ const buttonVariants = cva(
         secondary: "bg-gold-500 text-purple-900 hover:bg-gold-600 focus:ring-gold-500",
         ghost: "text-purple-700 hover:bg-purple-50 focus:ring-purple-500",
         link: "text-purple-700 underline-offset-4 hover:underline",
-        gradient: "bg-gradient-to-r from-purple-700 to-purple-600 text-white hover:from-purple-800 hover:to-purple-700 focus:ring-purple-500"
+        gradient: "bg-gradient-to-r from-purple-700 to-purple-600 text-white hover:from-purple-800 hover:to-purple-700 transition-all duration-200 focus:ring-purple-500 shadow-lg hover:shadow-xl"
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useListings, usePopularEvents } from '@/lib/hooks/use-listings'
-import { useDebouncedSearch } from '@/lib/hooks/use-search'
 import { Listing } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
 import Link from 'next/link'
@@ -25,12 +24,19 @@ interface EventGroup {
 
 export default function EventsPage() {
   const [timeFilter, setTimeFilter] = useState<'all' | 'upcoming' | 'this-week' | 'this-month'>('upcoming')
-  const { query, updateQuery, results: searchResults } = useDebouncedSearch()
+  const [searchQuery, setSearchQuery] = useState('')
   const { data: listingsData, isLoading } = useListings()
   const { data: popularEvents } = usePopularEvents()
 
-  // Use search results if searching, otherwise use regular listings
-  const listings = searchResults?.listings || listingsData?.data || []
+  // Filter listings based on search query (client-side)
+  const allListings = listingsData?.data || []
+  const listings = searchQuery.trim() 
+    ? allListings.filter(listing => 
+        listing.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        listing.venue?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allListings
 
   // Group listings by event
   const eventGroups: EventGroup[] = []
@@ -103,8 +109,8 @@ export default function EventsPage() {
             <div className="flex-1">
               <Input
                 placeholder="Search events..."
-                value={query}
-                onChange={(e) => updateQuery(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="text-lg"
               />
             </div>
@@ -125,7 +131,7 @@ export default function EventsPage() {
         </div>
 
         {/* Popular Events */}
-        {!query && popularEvents && popularEvents.length > 0 && (
+        {!searchQuery && popularEvents && popularEvents.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Popular This Week</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -160,7 +166,7 @@ export default function EventsPage() {
           {isLoading ? (
             <EventsSkeleton />
           ) : filteredEventGroups.length === 0 ? (
-            <EmptyEventsState hasSearch={!!query} timeFilter={timeFilter} />
+            <EmptyEventsState hasSearch={!!searchQuery} timeFilter={timeFilter} />
           ) : (
             filteredEventGroups.map((eventGroup) => (
               <EventCard key={eventGroup.eventName} eventGroup={eventGroup} />

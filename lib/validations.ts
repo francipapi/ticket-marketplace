@@ -56,7 +56,7 @@ export const fileUploadSchema = z.object({
 export const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  UPLOAD_DIR: z.string().default('./public/uploads'),
+  UPLOAD_DIR: z.string().default('public/uploads'),
   MAX_FILE_SIZE: z.string().transform(Number).pipe(z.number().positive()).default('10485760'),
   ALLOWED_FILE_TYPES: z.string().default('application/pdf,image/jpeg,image/png'),
 });

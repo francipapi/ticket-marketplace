@@ -150,6 +150,14 @@ export class AirtableListingService implements ListingService {
         filterFormulas.push(`{price} <= ${filters.priceMax}`)
       }
       
+      if (filters.venue) {
+        filterFormulas.push(`SEARCH('${filters.venue}', {venue}) > 0`)
+      }
+      
+      if (filters.ticketType) {
+        filterFormulas.push(`SEARCH('${filters.ticketType}', {title}) > 0`)
+      }
+      
       if (filters.eventDateFrom) {
         filterFormulas.push(`{eventDate} >= '${filters.eventDateFrom.toISOString().split('T')[0]}'`)
       }
@@ -308,9 +316,6 @@ export class AirtableListingService implements ListingService {
     this.invalidateListingCache(id)
     
     const updatedListing = await this.update(id, { status })
-    
-    // Clear any cached listing queries to force refresh on browse page
-    this.client.clearListingsQueryCache?.()
     
     return updatedListing
   }

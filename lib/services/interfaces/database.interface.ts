@@ -155,6 +155,8 @@ export interface ListingFilters {
   priceMax?: number
   eventDateFrom?: Date
   eventDateTo?: Date
+  venue?: string
+  ticketType?: string
   limit?: number
   offset?: number
 }

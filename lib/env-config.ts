@@ -27,8 +27,8 @@ const EnvironmentSchema = z.object({
   CLERK_SECRET_KEY: z.string().min(1, 'Clerk secret key is required'),
   NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/sign-in'),
   NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/sign-up'),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default('/listings'),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default('/listings'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default('/browse'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default('/browse'),
   
   // Payment configuration
   MOCK_PAYMENTS: z.string().transform(val => val === 'true').default('true'),
@@ -41,7 +41,7 @@ const EnvironmentSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
   
   // File upload
-  UPLOAD_DIR: z.string().default('./public/uploads'),
+  UPLOAD_DIR: z.string().default('public/uploads'),
   MAX_FILE_SIZE: z.string().transform(Number).default('10485760'), // 10MB
   ALLOWED_FILE_TYPES: z.string().default('application/pdf,image/jpeg,image/png'),
   
