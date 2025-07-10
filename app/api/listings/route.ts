@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
               sellerInfo = {
                 id: seller.id,
                 username: seller.username,
+                rating: seller.rating || 5, // Default rating
               };
             }
           } catch (error) {
@@ -72,7 +73,8 @@ export async function GET(request: NextRequest) {
 
         return {
           ...listing,
-          user: sellerInfo,
+          seller: sellerInfo,
+          user: sellerInfo, // Keep both for compatibility
           _count: {
             offers: 0, // TODO: Implement offer count in service layer
           },
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      listings,
+      data: listings,
       pagination: {
         page,
         limit,

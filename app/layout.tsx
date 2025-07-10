@@ -3,13 +3,22 @@ import { Inter } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
-import { Toaster } from "react-hot-toast";
+import { QueryProvider } from "@/lib/providers/query-client";
+import { ToastProvider } from "@/lib/providers/toast-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ticket Marketplace - Buy and Sell Event Tickets Safely",
-  description: "A secure peer-to-peer marketplace for buying and selling digital event tickets with fraud prevention and automated delivery.",
+  title: "Warwick Tickets - Student Ticket Marketplace",
+  description: "The trusted marketplace for Warwick University students to buy and sell event tickets safely. No more sketchy Facebook groups!",
+  keywords: "Warwick University, tickets, student marketplace, events, concerts, festivals",
+  authors: [{ name: "Warwick Tickets Team" }],
+  openGraph: {
+    title: "Warwick Tickets - Student Ticket Marketplace",
+    description: "Buy and sell tickets safely within the Warwick University community",
+    type: "website",
+    locale: "en_GB"
+  }
 };
 
 export default function RootLayout({
@@ -21,11 +30,13 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
-          <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <main>{children}</main>
-          </div>
-          <Toaster position="top-right" />
+          <QueryProvider>
+            <div className="min-h-screen bg-gray-50">
+              <Navbar />
+              <main>{children}</main>
+            </div>
+            <ToastProvider />
+          </QueryProvider>
         </body>
       </html>
     </ClerkProvider>

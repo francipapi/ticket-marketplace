@@ -1,20 +1,39 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
+// Define public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/browse(.*)',
+  '/events(.*)',
+  '/listings/(.*)', // Individual listing pages are public
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/listings', // GET requests to browse listings
+  '/api/listings/(.*)', // GET requests to view individual listings
+  '/api/health(.*)',
+  '/api/simple-test(.*)',
+]);
+
 // Define which routes should be protected
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/listings/create(.*)',
   '/listings/edit(.*)',
-  '/offers(.*)',
+  '/profile(.*)',
+  '/settings(.*)',
   '/api/dashboard(.*)',
-  '/api/listings(.*)',
   '/api/offers(.*)',
   '/api/upload(.*)',
   '/api/payments(.*)',
-  '/api/user/sync',
+  '/api/user/sync(.*)',
 ]);
 
 export default clerkMiddleware(({ protect }, req) => {
+  // Skip protection for public routes
+  if (isPublicRoute(req)) {
+    return;
+  }
+  
   // Protect routes that require authentication
   if (isProtectedRoute(req)) {
     protect();

@@ -1,25 +1,17 @@
 # Claude Development Guidelines
 
-## 🚨 CRITICAL: Phase 2 Implementation Protocol
+## 🚨 CRITICAL: Current Phase Status
 
-**YOU ARE IMPLEMENTING PHASE 2 OF THE TICKET MARKETPLACE PROJECT**
+**Current Phase**: Phase 3 - Frontend UI with Enhanced Features
+**Backend**: Phase 2 Complete (Airtable + Clerk + Mock Payments)
+**Implementation Approach**: Component-driven development with UI/UX enhancements
 
-**Primary Reference**: Follow `/initial.md` step-by-step implementation guide
-**Current Phase**: Service Layer Foundation with Airtable + Clerk + Mock Payments
-**Implementation Approach**: Atomic tasks with mandatory testing after each step
-
-### Implementation Rules:
-1. **Follow initial.md Exactly**: Every file path, content, and test command is provided
-2. **Test After Every Step**: Use the provided test commands to verify each operation
-3. **Use Provided Code**: Copy the exact TypeScript code from initial.md
-4. **Validate Continuously**: Run validation checkpoints at specified intervals
-5. **Log Everything**: All operations should have detailed console logging
-
-### Current Environment Status:
-- ✅ Clerk authentication configured
-- ✅ Airtable API credentials ready
-- ✅ Mock payments enabled
-- ✅ All required dependencies installed
+### Phase 3 Key Features:
+1. **Warwick University Theme**: Purple/gold colors, student-focused messaging
+2. **Enhanced Ticket Display**: Event-grouped browsing with rich media
+3. **OCR Ticket Upload**: Extract event details from ticket images automatically
+4. **Buy Now / Place Bid**: Dual purchase options replacing single "make offer"
+5. **Mobile-First Design**: Responsive UI optimized for student mobile usage
 
 ## Research Requirements
 
@@ -48,7 +40,7 @@ This is a ticket marketplace application using:
 - **Styling**: Tailwind CSS
 - **Architecture**: Service Layer Pattern with Factory Pattern for implementation switching
 
-### Phase 2 Architecture:
+### Architecture Overview:
 ```
 lib/services/
 ├── interfaces/           # Service contracts
@@ -174,24 +166,7 @@ offers: {
 }
 ```
 
-## Phase 2 Implementation Guidelines
-
-### 🎯 Current Implementation Focus
-**You are implementing the Service Layer Foundation (Phase 2A-2C)**
-
-### Mandatory Implementation Steps:
-1. **Create Service Interfaces First** - Define contracts before implementations
-2. **Implement Mock Payment Service** - Realistic simulation with proper timing
-3. **Build Airtable User Service** - Real API integration with rate limiting
-4. **Enhanced Clerk Authentication** - Auto user creation from Clerk data
-5. **API Route Updates** - Use new service layer architecture
-6. **Comprehensive Testing** - Every step must be validated
-
-### Testing Protocol:
-- **After each file creation**: Verify with `cat` command
-- **After each service**: Run dedicated test script
-- **After each phase**: Run validation checkpoint
-- **Before completion**: Run master test script
+## Development Guidelines
 
 ### Service Factory Usage:
 ```typescript
@@ -207,7 +182,7 @@ const paymentService = getPaymentService()  // Always mock in Phase 2
 
 ## Common Issues and Solutions
 
-### Airtable Rate Limiting (Critical for Phase 2)
+### Airtable Rate Limiting
 **Always use p-queue for rate limiting**:
 ```typescript
 import PQueue from 'p-queue'
@@ -312,7 +287,7 @@ PUT    /api/listings/airtable/{id}      // 404 Not Found
 - Use `messageTemplate` not `message`
 - Valid messageTemplate values: `'asking_price'`, `'make_offer'`, `'check_availability'`
 
-### Clerk Server-Side Authentication (Phase 2 Requirement)
+### Clerk Server-Side Authentication
 ```typescript
 // Correct Phase 2 pattern
 import { auth, clerkClient } from '@clerk/nextjs/server'
@@ -338,7 +313,7 @@ export async function requireAuth(): Promise<AppUser> {
 }
 ```
 
-### Mock Payment Implementation (Phase 2)
+### Mock Payment Implementation
 ```typescript
 // Realistic payment simulation
 export class MockPaymentService implements PaymentService {
@@ -379,7 +354,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 ```
 
-### Error Handling & Logging (Phase 2 Requirement)
+### Error Handling & Logging
 ```typescript
 // All operations must have detailed logging
 try {
@@ -397,33 +372,19 @@ try {
 }
 ```
 
-### File Structure Validation
-Before implementing, ensure these directories exist:
-```bash
-# Required Phase 2 structure
-lib/services/interfaces/
-lib/services/implementations/airtable/
-lib/services/implementations/mock-payment/
-lib/services/implementations/prisma/
-scripts/
-app/api/user/sync-enhanced/
-app/api/payments/create-intent/
-app/api/payments/process/
-```
-
-### Environment Variables (Phase 2)
+### Environment Variables
 ```env
 # Database Configuration
 DATABASE_URL="file:./prisma/dev.db"
 USE_AIRTABLE=true
 
-# Airtable Configuration (critical for Phase 2)
-AIRTABLE_API_KEY=patJ1EroOjRYkbctb.b2adfc99fe11c2800075ec0cbde62ada08eee11f8021591d227567e6dbd92868
-AIRTABLE_BASE_ID=apphGdyr5vFOJx2kF
+# Airtable Configuration
+AIRTABLE_API_KEY=your_api_key
+AIRTABLE_BASE_ID=your_base_id
 
 # Clerk Configuration
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_cG9saXNoZWQtcGxhdHlwdXMtNDkuY2xlcmsuYWNjb3VudHMuZGV2JA
-CLERK_SECRET_KEY=sk_test_3d6u5MUS4Ws5dfMs3by2EJDd2vILO0stY2pSRjSMp4
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
 
 # Enhanced Mock Payment Configuration
 MOCK_PAYMENTS=true
@@ -443,10 +404,10 @@ NODE_ENV=development
 LOG_LEVEL=info
 ```
 
-## 🚀 ENHANCED PHASE 2 IMPLEMENTATION FEATURES
+## Best Practices
 
 ### Multi-Level Caching Strategy
-**CRITICAL: Implement caching to reduce Airtable API calls**
+**Implement caching to reduce Airtable API calls**
 
 ```typescript
 // lib/cache.ts - Required implementation
@@ -484,73 +445,6 @@ export const CacheService = {
 }
 ```
 
-### Enhanced Mock Payment Features
-**Implement realistic payment simulation with analytics**
-
-```typescript
-// Must include these features in MockPaymentService:
-export class MockPaymentService {
-  // Required: Configurable failure simulation
-  private readonly FAILURE_RATE = parseFloat(process.env.MOCK_PAYMENT_FAILURE_RATE || '0.1')
-  
-  // Required: Payment timeline tracking
-  timeline: Array<{
-    event: 'payment_intent_created' | 'payment_processing_started' | 'payment_succeeded' | 'payment_failed' | 'seller_payout_completed'
-    timestamp: Date
-    description: string
-  }>
-  
-  // Required: Analytics methods
-  async getPaymentAnalytics(): Promise<PaymentAnalytics>
-  async getPaymentHistory(filters?: PaymentFilters): Promise<MockPayment[]>
-  
-  // Required: Enhanced failure reasons
-  failureReasons = [
-    'insufficient_funds',
-    'card_declined', 
-    'expired_card',
-    'processing_error',
-    'fraud_prevention'
-  ]
-}
-```
-
-### Data Migration & Validation
-**CRITICAL: Must validate all data integrity during migration**
-
-```typescript
-// Required migration validation steps:
-1. Record count validation (Prisma vs Airtable)
-2. Relationship integrity checks (linked records exist)
-3. Data type validation (dates, numbers, strings)
-4. Field mapping verification
-5. Migration report generation
-
-// Example validation
-async validateMigration(): Promise<boolean> {
-  // Count validation
-  const prismaCount = await prisma.user.count()
-  const airtableCount = (await airtable.users.select().all()).length
-  
-  if (prismaCount !== airtableCount) {
-    console.error(`❌ Count mismatch: ${prismaCount} vs ${airtableCount}`)
-    return false
-  }
-  
-  // Relationship validation
-  const listings = await airtable.listings.select().all()
-  for (const listing of listings) {
-    const seller = listing.get('Seller') as string[]
-    if (!seller || seller.length === 0) {
-      console.error(`❌ Listing ${listing.id} has no seller`)
-      return false
-    }
-  }
-  
-  return true
-}
-```
-
 ### Environment Configuration Validation
 **Use centralized environment management with validation**
 
@@ -583,97 +477,7 @@ export function validateEnvironment(): { isValid: boolean; errors: string[] } {
 }
 ```
 
-### Field Mapping & Configuration
-**CRITICAL: Use centralized field mapping for Airtable**
-
-```typescript
-// lib/airtable-config.ts - Required implementation
-export const AIRTABLE_CONFIG = {
-  FIELD_MAPPINGS: {
-    users: {
-      clerkId: 'Clerk ID',
-      email: 'Email',
-      username: 'Username',
-      rating: 'Rating',
-      isVerified: 'Is Verified',
-      totalSales: 'Total Sales'
-    },
-    listings: {
-      title: 'Title',
-      eventName: 'Event Name',
-      eventDate: 'Event Date',
-      priceInCents: 'Price (Cents)',
-      seller: 'Seller'  // Link field
-    }
-  }
-}
-
-// Required: Field transformation utilities
-export const FIELD_TRANSFORMS = {
-  toAirtable: (tableName: string, data: any) => {
-    // Convert API fields to Airtable field names
-  },
-  fromAirtable: (tableName: string, record: any) => {
-    // Convert Airtable fields to API field names
-  }
-}
-```
-
-## 🚨 CRITICAL SUCCESS CRITERIA
-
-### Phase 2 Completion Requirements:
-**ALL of these must pass before Phase 2 is considered complete:**
-
-1. **TypeScript Compilation**: `npm run type-check` must pass with zero errors
-2. **Environment Test**: `npx tsx scripts/test-environment.ts` must validate all variables
-3. **Payment Service Test**: `npx tsx scripts/test-payment-service.ts` must complete full flow
-4. **Airtable User Test**: `npx tsx scripts/test-airtable-user.ts` must create/read/update/delete
-5. **Auth Integration Test**: `npx tsx scripts/test-auth-integration.ts` must validate helpers
-6. **API Integration Test**: `npx tsx scripts/test-api-integration.ts` must complete end-to-end
-7. **Master Test**: `npx tsx scripts/test-complete-system.ts` must show 100% pass rate
-
-### If ANY Test Fails:
-1. **STOP implementation immediately**
-2. **Fix the failing component**
-3. **Re-run the specific test**
-4. **Only continue after ALL tests pass**
-
-## 🎯 IMPLEMENTATION CHECKPOINT COMMANDS
-
-### After Creating Service Interfaces (Task 1):
-```bash
-npm run type-check
-ls -la lib/services/interfaces/
-cat lib/services/interfaces/database.interface.ts | head -10
-```
-
-### After Mock Payment Service (Task 2):
-```bash
-npm run type-check
-npx tsx scripts/test-payment-service.ts
-```
-
-### After Airtable User Service (Task 3):
-```bash
-npm run type-check
-npx tsx scripts/test-airtable-user.ts
-```
-
-### After Enhanced Auth (Task 4-6):
-```bash
-npm run type-check
-npx tsx scripts/test-environment.ts
-npx tsx scripts/test-auth-integration.ts
-```
-
-### After API Routes (Task 7-10):
-```bash
-npm run type-check
-npx tsx scripts/test-api-integration.ts
-npx tsx scripts/test-complete-system.ts
-```
-
-## ⚠️ COMMON MISTAKES TO AVOID
+## Common Mistakes to Avoid
 
 ### 1. File Path Errors
 - **Use absolute paths** starting from project root
@@ -748,147 +552,97 @@ try {
 }
 ```
 
-## 📋 FINAL VALIDATION CHECKLIST
+## Phase 3 UI/UX Guidelines
 
-Before marking Phase 2 complete, verify:
-
-### Files Created (All must exist):
-- [ ] `lib/services/interfaces/database.interface.ts`
-- [ ] `lib/services/interfaces/payment.interface.ts`
-- [ ] `lib/services/factory.ts`
-- [ ] `lib/services/implementations/mock-payment/payment.service.ts`
-- [ ] `lib/airtable-client.ts`
-- [ ] `lib/services/implementations/airtable/user.service.ts`
-- [ ] `lib/services/implementations/airtable/database.service.ts`
-- [ ] `lib/auth-server.ts`
-- [ ] `lib/api-helpers-enhanced.ts`
-- [ ] `app/api/user/sync-enhanced/route.ts`
-- [ ] `app/api/payments/create-intent/route.ts`
-- [ ] `app/api/payments/process/route.ts`
-
-### Test Scripts Created (All must exist):
-- [ ] `scripts/test-payment-service.ts`
-- [ ] `scripts/test-airtable-user.ts`
-- [ ] `scripts/test-auth-integration.ts`
-- [ ] `scripts/test-environment.ts`
-- [ ] `scripts/test-api-integration.ts`
-- [ ] `scripts/test-performance.ts`
-- [ ] `scripts/test-complete-system.ts`
-
-### Environment Configuration:
-- [ ] `USE_AIRTABLE=true` added to `.env.local`
-- [ ] All required environment variables present
-- [ ] Airtable connection working
-- [ ] Clerk authentication configured
-
-### Functional Requirements:
-- [ ] Service factory switches implementations correctly
-- [ ] Mock payments simulate realistic timing and success rates
-- [ ] Airtable user service performs full CRUD operations
-- [ ] Authentication auto-creates users from Clerk
-- [ ] All operations have detailed console logging
-- [ ] Rate limiting prevents API abuse
-- [ ] Error handling with proper recovery
-
-### Quality Assurance:
-- [ ] TypeScript compiles without warnings
-- [ ] All tests pass consistently
-- [ ] Performance meets benchmarks
-- [ ] Code follows established patterns
-- [ ] No hardcoded values (use environment variables)
-- [ ] Proper separation of concerns
-
-**ONLY AFTER ALL CHECKBOXES ARE COMPLETE IS PHASE 2 READY** ✅
-
-## 🧪 ENHANCED TESTING REQUIREMENTS
-
-### Additional Test Scripts Required
-Beyond the standard test scripts, you must also create:
-
-**Migration Testing:**
-```bash
-# Test data migration integrity
-npx tsx scripts/test-migration.ts
-
-# Test rollback capability
-npx tsx scripts/test-rollback.ts
+### Warwick University Theme
+```typescript
+// lib/constants/theme.ts
+export const theme = {
+  colors: {
+    primary: {
+      purple: '#5B21B6',      // Warwick purple
+      gold: '#F59E0B',        // Warwick gold
+      darkPurple: '#4C1D95',  // Hover state
+      lightGold: '#FCD34D'    // Light accent
+    },
+    semantic: {
+      success: '#10B981',
+      error: '#EF4444',
+      warning: '#F59E0B',
+      info: '#3B82F6'
+    }
+  },
+  gradients: {
+    hero: 'bg-gradient-to-br from-purple-700 via-purple-600 to-amber-500',
+    card: 'bg-gradient-to-br from-purple-50 to-amber-50'
+  }
+}
 ```
 
-**Performance Testing:**
-```bash
-# Test Airtable API performance
-npx tsx scripts/test-airtable-performance.ts
+### Mobile-First Components
+All components must be responsive with mobile breakpoints:
+- **Mobile**: < 640px (default)
+- **Tablet**: 640px - 1024px
+- **Desktop**: > 1024px
 
-# Test caching effectiveness
-npx tsx scripts/test-cache-performance.ts
-
-# Test payment analytics
-npx tsx scripts/test-payment-analytics.ts
+### State Management with TanStack Query
+```typescript
+// lib/hooks/use-listings.ts
+export function useListings(filters?: ListingFilters) {
+  return useQuery({
+    queryKey: ['listings', filters],
+    queryFn: () => fetchListings(filters),
+    staleTime: 60 * 1000,        // 1 minute
+    cacheTime: 5 * 60 * 1000,    // 5 minutes
+    refetchOnWindowFocus: false
+  })
+}
 ```
 
-**Integration Testing:**
-```bash
-# Test feature flag switching
-npx tsx scripts/test-feature-flags.ts
+### Form Handling with React Hook Form + Zod
+```typescript
+const FormSchema = z.object({
+  title: z.string().min(5).max(100),
+  eventName: z.string().min(3),
+  eventDate: z.string().refine(val => new Date(val) > new Date()),
+  priceInCents: z.number().min(100),
+  quantity: z.number().min(1).max(10),
+  ticketFiles: z.array(z.instanceof(File)).min(1).max(5)
+})
 
-# Test environment validation
-npx tsx scripts/test-environment-validation.ts
+export function CreateListingForm() {
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema)
+  })
+  
+  // Multi-step form with progress indicator
+  const [step, setStep] = useState(1)
+  
+  return (
+    <Form {...form}>
+      {/* Step indicators */}
+      <ProgressSteps current={step} total={4} />
+      
+      {/* Conditional step rendering */}
+      {step === 1 && <BasicInfoStep />}
+      {step === 2 && <TicketUploadStep />}
+      {step === 3 && <PricingStep />}
+      {step === 4 && <ReviewStep />}
+    </Form>
+  )
+}
 ```
 
-### Benchmarking Requirements
-**Must achieve these performance targets:**
+### Common UI/UX Pitfalls to Avoid
+1. **Mobile Navigation**: Don't hide critical actions in hamburger menus
+2. **Form Length**: Break long forms into steps with progress indicators
+3. **Loading States**: Always show skeleton screens, not spinners
+4. **Error Messages**: Be specific and actionable
+5. **Touch Targets**: Minimum 44x44px for mobile
+6. **Contrast**: Ensure WCAG AA compliance
 
-- **User Operations**: < 1000ms average (including cache misses)
-- **Payment Creation**: < 100ms average
-- **Airtable API Calls**: Respect 5 req/sec limit with 0 rate limit errors
-- **Cache Hit Rate**: > 80% for user lookups
-- **Memory Usage**: < 100MB heap for test scenarios
-- **Migration Speed**: Process 100 records in < 60 seconds
-
-### Error Handling Validation
-**Must handle these scenarios gracefully:**
-
-1. **Airtable Rate Limiting**: Automatic retry with exponential backoff
-2. **Network Failures**: Graceful degradation with cached data
-3. **Invalid Environment**: Clear error messages with resolution steps
-4. **Payment Failures**: Proper status tracking and user feedback
-5. **Migration Errors**: Partial rollback and error reporting
-
-### Monitoring & Logging Requirements
-**All operations must log:**
-
-- **Request timing** with performance metrics
-- **Cache hit/miss rates** for optimization
-- **API call counts** to track rate limit usage
-- **Error details** with context for debugging
-- **Migration progress** with success/failure counts
-
-### Final Validation Checklist Extensions
-
-**Performance Validation:**
-- [ ] Cache service implemented and functional
-- [ ] Airtable rate limiting working correctly
-- [ ] Payment analytics providing accurate data
-- [ ] Memory usage within acceptable limits
-- [ ] API response times meet benchmarks
-
-**Data Integrity Validation:**
-- [ ] Migration scripts create accurate data copies
-- [ ] Relationship links maintained correctly
-- [ ] Field mappings handle all data types
-- [ ] Rollback procedures tested and working
-- [ ] Data validation prevents corruption
-
-**Production Readiness:**
-- [ ] Environment validation catches all config errors
-- [ ] Feature flags allow seamless switching
-- [ ] Error handling covers all failure scenarios
-- [ ] Logging provides sufficient debugging information
-- [ ] Monitoring reveals performance bottlenecks
-
-**AI Agent Readiness:**
-- [ ] All code examples in initial.md are copy-paste ready
-- [ ] Every test command has expected output documented
-- [ ] Error recovery procedures are clearly defined
-- [ ] Success criteria are objectively measurable
-- [ ] Implementation order prevents dependency conflicts
+### Performance Requirements
+- **First Contentful Paint**: < 1.5s
+- **Time to Interactive**: < 3s
+- **Lighthouse Score**: > 90
+- **Bundle Size**: < 200KB (initial)

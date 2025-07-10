@@ -67,7 +67,7 @@ export default function AirtableDashboard() {
         console.log('Listings data received:', data);
         
         // Transform the data to match the expected interface
-        const transformedListings = (data.listings || []).map((listing: any) => ({
+        const transformedListings = (data.data || []).map((listing: any) => ({
           id: listing.id,
           title: listing.title,
           eventName: listing.eventName,
@@ -293,7 +293,7 @@ export default function AirtableDashboard() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">My Listings</h2>
           <Link
-            href="/listings/create"
+            href="/listings/create-ocr"
             className="flex items-center space-x-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
@@ -306,7 +306,7 @@ export default function AirtableDashboard() {
             <Package className="h-12 w-12 text-gray-700 mx-auto mb-4" />
             <p className="text-gray-900 mb-4">You haven't created any listings yet</p>
             <Link
-              href="/listings/create"
+              href="/listings/create-ocr"
               className="text-blue-600 hover:underline"
             >
               Create your first listing
