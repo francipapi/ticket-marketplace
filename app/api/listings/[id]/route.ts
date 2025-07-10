@@ -23,16 +23,64 @@ export async function GET(
 ) {
   return withErrorHandling(async () => {
     const { id } = await params;
+    console.log(`🔍 API: Fetching listing ${id}`);
+    
     const dbService = getDatabaseService();
-
     const listing = await dbService.listings.findById(id);
     
-    if (!listing || listing.status !== 'ACTIVE') {
+    console.log(`📋 API: Listing found:`, {
+      id: listing?.id,
+      status: listing?.status,
+      userId: listing?.userId,
+      title: listing?.title
+    });
+    
+    if (!listing) {
+      console.log(`❌ API: Listing ${id} not found in database`);
       return NextResponse.json(
         { error: 'Listing not found' },
         { status: 404 }
       );
     }
+
+    // Check if listing is viewable
+    // Get current user to check ownership
+    let currentUser = null;
+    try {
+      const { auth } = await import('@clerk/nextjs/server');
+      const { userId } = await auth();
+      
+      if (userId) {
+        // Get user from database
+        currentUser = await dbService.users.findByClerkId(userId);
+      }
+    } catch (error) {
+      // User not authenticated, continue
+      console.log('🔍 No authentication found for listing access check');
+    }
+
+    const isOwner = currentUser && currentUser.id === listing.userId;
+    const isActive = listing.status === 'ACTIVE';
+
+    console.log(`🔐 API: Access check:`, {
+      currentUserId: currentUser?.id,
+      listingUserId: listing.userId,
+      isOwner,
+      listingStatus: listing.status,
+      isActive
+    });
+
+    // Allow viewing if: listing is active OR user is the owner
+    if (!isActive && !isOwner) {
+      console.log(`❌ API: Access denied - listing not active and user not owner`);
+      return NextResponse.json(
+        { error: 'Listing not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`✅ API: Access granted to listing ${id}`);
+  
 
     // Get seller info
     let sellerInfo = null;

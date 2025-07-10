@@ -304,7 +304,15 @@ export class AirtableListingService implements ListingService {
   async updateStatus(id: string, status: 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'DELISTED'): Promise<AppListing> {
     console.log(`📊 Updating listing status: ${id} -> ${status}`)
     
-    return await this.update(id, { status })
+    // Clear cache before updating to ensure fresh data
+    this.invalidateListingCache(id)
+    
+    const updatedListing = await this.update(id, { status })
+    
+    // Clear any cached listing queries to force refresh on browse page
+    this.client.clearListingsQueryCache?.()
+    
+    return updatedListing
   }
 
   // Helper methods

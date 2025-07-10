@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Filter, Grid, List, Search, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ export default function BrowsePage() {
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  const { data: listingsData, isLoading, error } = useListings(filters)
+  const { data: listingsData, isLoading, error, refetch } = useListings(filters)
   const { query, updateQuery, results: searchResults } = useDebouncedSearch()
 
   // Use search results if searching, otherwise use regular listings
@@ -70,6 +70,18 @@ export default function BrowsePage() {
     })
     updateQuery('')
   }
+
+  // Refetch listings when page becomes visible (e.g., after delisting)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && refetch) {
+        refetch()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [refetch])
 
   return (
     <div className="min-h-screen bg-gray-50">

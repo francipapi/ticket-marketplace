@@ -85,6 +85,12 @@ export default function OCRCreateListingPage() {
   const handleOCRExtraction = (extractedData: any) => {
     console.log('🎯 OCR extracted data:', extractedData)
     console.log('🔍 Current form values before OCR:', form.getValues())
+    console.log('🔍 Form object test:', {
+      setValue: typeof form.setValue,
+      getValues: typeof form.getValues,
+      trigger: typeof form.trigger,
+      formState: form.formState
+    })
     setOcrData(extractedData)
     setOcrConfidence(extractedData.confidence)
     
@@ -93,11 +99,23 @@ export default function OCRCreateListingPage() {
     
     if (extractedData.eventName && extractedData.eventName.trim().length > 0) {
       const cleanEventName = extractedData.eventName.trim()
-      form.setValue('eventName', cleanEventName)
+      console.log('📝 Setting eventName to:', cleanEventName)
+      form.setValue('eventName', cleanEventName, { 
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true 
+      })
       // Generate a smart title
-      form.setValue('title', `${cleanEventName} Tickets`)
+      const title = `${cleanEventName} Tickets`
+      console.log('📝 Setting title to:', title)
+      form.setValue('title', title, { 
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true 
+      })
       fieldsPopulated++
       console.log('✅ Set eventName:', cleanEventName)
+      console.log('✅ Set title:', title)
     }
     
     if (extractedData.eventDate && extractedData.eventDate.trim().length > 0) {
@@ -135,8 +153,17 @@ export default function OCRCreateListingPage() {
         }
         
         if (parsedDate && !isNaN(parsedDate.getTime())) {
-          const isoDate = parsedDate.toISOString().split('T')[0]
-          form.setValue('eventDate', isoDate)
+          // Fix timezone issue - use local date instead of UTC conversion
+          const year = parsedDate.getFullYear()
+          const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+          const day = String(parsedDate.getDate()).padStart(2, '0')
+          const isoDate = `${year}-${month}-${day}`
+          console.log('📝 Setting eventDate to:', isoDate)
+          form.setValue('eventDate', isoDate, { 
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true 
+          })
           fieldsPopulated++
           console.log('✅ Set eventDate:', isoDate)
           
@@ -157,15 +184,27 @@ export default function OCRCreateListingPage() {
     }
     
     if (extractedData.venue && extractedData.venue.trim().length > 0) {
-      form.setValue('venue', extractedData.venue.trim())
+      const cleanVenue = extractedData.venue.trim()
+      console.log('📝 Setting venue to:', cleanVenue)
+      form.setValue('venue', cleanVenue, { 
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true 
+      })
       fieldsPopulated++
-      console.log('✅ Set venue:', extractedData.venue.trim())
+      console.log('✅ Set venue:', cleanVenue)
     }
     
     if (extractedData.ticketType && extractedData.ticketType.trim().length > 0) {
-      form.setValue('ticketType', extractedData.ticketType.trim())
+      const cleanTicketType = extractedData.ticketType.trim()
+      console.log('📝 Setting ticketType to:', cleanTicketType)
+      form.setValue('ticketType', cleanTicketType, { 
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true 
+      })
       fieldsPopulated++
-      console.log('✅ Set ticketType:', extractedData.ticketType.trim())
+      console.log('✅ Set ticketType:', cleanTicketType)
     }
     
     // Force form validation refresh and log results
@@ -180,23 +219,36 @@ export default function OCRCreateListingPage() {
     
     console.log(`📊 Populated ${fieldsPopulated} fields from OCR`)
     
-    // Show appropriate feedback
-    if (fieldsPopulated >= 2 && extractedData.confidence > 70) {
-      toast.success(`Great! Extracted ${fieldsPopulated} fields with high confidence.`)
-      // Auto-advance if we have essential fields
-      if (extractedData.eventName && extractedData.eventDate) {
-        setTimeout(() => setCurrentStep(1), 2000)
+    // Show appropriate feedback and auto-advance logic
+    console.log(`📊 Auto-advance check: fieldsPopulated=${fieldsPopulated}, confidence=${extractedData.confidence}`)
+    console.log(`📊 Essential fields: eventName="${extractedData.eventName}", eventDate="${extractedData.eventDate}"`)
+    
+    // More permissive auto-advance logic
+    const shouldAutoAdvance = (fieldsPopulated >= 1 && extractedData.confidence > 40) || 
+                             (fieldsPopulated >= 2) ||
+                             (extractedData.eventName && extractedData.eventDate)
+    
+    if (shouldAutoAdvance) {
+      if (fieldsPopulated >= 2 && extractedData.confidence > 70) {
+        toast.success(`Great! Extracted ${fieldsPopulated} fields with high confidence.`)
+      } else {
+        toast.success(`Extracted ${fieldsPopulated} fields. Moving to review step.`)
       }
+      
+      console.log('🚀 Auto-advancing to review step in 2 seconds...')
+      setTimeout(() => {
+        console.log('🚀 Moving to step 1 (review)')
+        setCurrentStep(1)
+        toast.info('Please review and verify the extracted information.')
+      }, 2000)
+      
     } else if (fieldsPopulated >= 1) {
-      toast.success(`Extracted ${fieldsPopulated} fields. Please verify and complete the missing information.`)
+      toast.success(`Extracted ${fieldsPopulated} fields. Click Next to review and complete.`)
     } else {
       toast.warning('OCR found limited information. Please fill in the fields manually.')
-      // If no fields were populated, still allow progression to manual entry
+      // Still allow manual progression
       setTimeout(() => {
-        if (fieldsPopulated === 0) {
-          console.log('📝 No fields populated, encouraging manual entry')
-          toast.info('You can fill in the details manually in the next step.')
-        }
+        toast.info('You can fill in the details manually in the next step.')
       }, 1000)
     }
     
@@ -295,17 +347,25 @@ export default function OCRCreateListingPage() {
       const { uploadedFiles: fileData } = await uploadResponse.json()
 
       // Then create listing
+      // Convert eventDate to datetime format for API validation
+      const listingData = {
+        ...data,
+        eventDate: data.eventDate ? new Date(data.eventDate + 'T00:00:00.000Z').toISOString() : new Date().toISOString(),
+        ticketFiles: fileData
+      }
+      
+      console.log('📤 Sending listing data:', listingData)
+      
       const listingResponse = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          ticketFiles: fileData
-        })
+        body: JSON.stringify(listingData)
       })
 
       if (!listingResponse.ok) {
-        throw new Error('Failed to create listing')
+        const errorData = await listingResponse.json()
+        console.error('❌ Listing creation failed:', errorData)
+        throw new Error(`Failed to create listing: ${errorData.error || 'Unknown error'}`)
       }
 
       const result = await listingResponse.json()
@@ -411,7 +471,13 @@ export default function OCRCreateListingPage() {
 
         {/* Form */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            // Only submit if we're on the final step
+            if (currentStep === steps.length - 1) {
+              form.handleSubmit(onSubmit)(e)
+            }
+          }}>
             {/* Step Content */}
             <Card className="mb-8">
               <CardContent className="p-8">
@@ -717,7 +783,7 @@ function ReviewStep({
             <FormLabel>Description (Optional)</FormLabel>
             <FormControl>
               <textarea
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 placeholder="Any additional details about the tickets..."
                 {...field}
               />

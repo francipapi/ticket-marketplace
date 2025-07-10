@@ -5,7 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { Upload, Camera, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { extractTicketInfo } from '@/lib/utils/ocr'
+import { extractTicketInfo } from '@/lib/utils/ocr-hybrid'
 import { toast } from 'sonner'
 
 interface ExtractedTicketInfo {
@@ -20,6 +20,7 @@ interface ExtractedTicketInfo {
   confidence: number
   hasPersonalInfo: boolean
   qrData?: string
+  extractionMethod?: string
 }
 
 interface TicketUploadProps {
@@ -55,9 +56,20 @@ export function TicketUpload({ onExtracted, onFileUploaded }: TicketUploadProps)
       console.log('📞 Calling extractTicketInfo...')
       const extracted = await extractTicketInfo(file)
       console.log('✅ OCR processing completed:', extracted)
+      console.log('📊 Extracted fields:', {
+        eventName: extracted.eventName,
+        eventDate: extracted.eventDate,
+        eventTime: extracted.eventTime,
+        venue: extracted.venue,
+        ticketType: extracted.ticketType,
+        orderReference: extracted.orderReference,
+        confidence: extracted.confidence
+      })
       
       setConfidence(extracted.confidence)
       setExtractedData(extracted)
+      
+      console.log('🔄 Calling onExtracted callback with:', extracted)
       onExtracted(extracted)
       
       if (extracted.confidence > 70) {
@@ -138,6 +150,11 @@ export function TicketUpload({ onExtracted, onFileUploaded }: TicketUploadProps)
                 <div className="flex items-center justify-center gap-2 mb-3">
                   {getConfidenceIcon(confidence)}
                   <span className="text-sm font-medium">Extraction Results</span>
+                  {extractedData?.extractionMethod && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      {extractedData.extractionMethod}
+                    </span>
+                  )}
                 </div>
                 <div className="text-center">
                   <span className="text-sm text-gray-600">Confidence: </span>
@@ -215,14 +232,18 @@ export function TicketUpload({ onExtracted, onFileUploaded }: TicketUploadProps)
       </div>
       
       {/* OCR Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">💡 Tips for best results:</h4>
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">🚀 Hybrid OCR System (2024):</h4>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Ensure good lighting and clear text</li>
-          <li>• Keep the ticket flat and straight</li>
-          <li>• Include the full ticket in the frame</li>
-          <li>• Higher resolution images work better</li>
+          <li>• 🌐 **Browser Native Text Detection** (Chrome/Edge - fastest)</li>
+          <li>• ⚡ **Quick Tesseract** (baseline recognition)</li>
+          <li>• 🔬 **Advanced Tesseract** (with preprocessing)</li>
+          <li>• 📐 **Template Matching** (mobile ticket patterns)</li>
+          <li>• 🎯 **Best Result Selection** (automatic quality scoring)</li>
         </ul>
+        <div className="mt-2 text-xs text-blue-600">
+          System tries 4 different methods and selects the best result automatically
+        </div>
       </div>
     </div>
   )

@@ -228,7 +228,9 @@ async function tryBrowserTextDetection(file: File): Promise<{ text: string; conf
 
 // Advanced text cleaning with ticket-specific fixes
 function advancedTextCleaning(text: string): string {
-  return text
+  console.log('🧹 Raw OCR text before cleaning:', JSON.stringify(text))
+  
+  const cleaned = text
     // Normalize whitespace
     .replace(/\s+/g, ' ')
     
@@ -258,6 +260,9 @@ function advancedTextCleaning(text: string): string {
     .replace(/\s*([,.;:\-])\s*/g, '$1 ')
     
     .trim()
+  
+  console.log('🧹 Cleaned OCR text:', JSON.stringify(cleaned))
+  return cleaned
 }
 
 // Intelligent extraction using ticket domain knowledge
@@ -422,9 +427,13 @@ async function preprocessImageAdvanced(file: File, options: {
 
 // Mobile ticket field extraction
 async function extractMobileTicketFields(lines: string[], extracted: ExtractedTicketInfo) {
+  console.log('📱 Processing mobile ticket lines:', lines)
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].toLowerCase().trim()
     const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : ''
+    
+    console.log(`📱 Line ${i}: "${lines[i]}" (lower: "${line}") -> next: "${nextLine}"`)
     
     // Mobile ticket specific patterns
     if (line === 'name' && nextLine && !extracted.holderName) {
@@ -458,6 +467,36 @@ async function extractMobileTicketFields(lines: string[], extracted: ExtractedTi
       if (!lines[i].toLowerCase().includes('ticket') && !lines[i].toLowerCase().includes('order')) {
         extracted.eventName = lines[i]
         console.log(`📱 Found event name: ${lines[i]}`)
+      }
+    }
+  }
+  
+  // Fallback: try to find the event name by pattern matching
+  if (!extracted.eventName) {
+    console.log('📱 No event name found by structure, trying pattern matching...')
+    for (const line of lines) {
+      // Look for lines that look like event names
+      if (line.toLowerCase().includes('halloween') || 
+          line.toLowerCase().includes('party') || 
+          line.toLowerCase().includes('smack') ||
+          (line.length > 10 && line.match(/^[A-Z][A-Za-z\s]+$/))) {
+        extracted.eventName = line
+        console.log(`📱 Found event name by pattern: ${line}`)
+        break
+      }
+    }
+  }
+  
+  // Fallback: try to find ticket type by pattern matching
+  if (!extracted.ticketType) {
+    console.log('📱 No ticket type found by structure, trying pattern matching...')
+    for (const line of lines) {
+      if (line.toLowerCase().includes('advance') || 
+          line.toLowerCase().includes('entry') ||
+          line.toLowerCase().includes('admission')) {
+        extracted.ticketType = line
+        console.log(`📱 Found ticket type by pattern: ${line}`)
+        break
       }
     }
   }

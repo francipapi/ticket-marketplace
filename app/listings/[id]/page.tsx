@@ -64,38 +64,84 @@ export default function ListingDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showBuyNow, setShowBuyNow] = useState(false);
   const [showPlaceBid, setShowPlaceBid] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  // Enable debug mode with URL parameter
+  const isDebugMode = typeof window !== 'undefined' && 
+    new URLSearchParams(window.location.search).has('debug');
 
   const fetchListing = useCallback(async () => {
     try {
-      const response = await fetch(`/api/listings/${params.id}`);
+      console.log(`🔍 Fetching listing: ${params.id}`);
+      
+      // Add cache-busting header to ensure fresh data
+      const response = await fetch(`/api/listings/${params.id}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Frontend: Listing fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        
         if (response.status === 404) {
-          toast.error('Listing not found');
+          toast.error('Listing not found or no longer available');
         } else {
-          toast.error('Failed to load listing');
+          toast.error(`Failed to load listing (${response.status})`);
         }
-        router.push('/listings');
+        router.push('/browse');
         return;
       }
       
       const result = await response.json();
+      console.log('✅ Frontend: Raw API response:', result);
+      
+      // Store debug info
+      setDebugInfo({
+        url: `/api/listings/${params.id}`,
+        status: response.status,
+        response: result,
+        params: params,
+        timestamp: new Date().toISOString()
+      });
       
       // Handle different response formats
       const listing = result.success ? result.data?.listing || result.data : result;
       
+      console.log('🔍 Frontend: Processing listing data:', {
+        hasSuccess: 'success' in result,
+        successValue: result.success,
+        resultType: typeof result,
+        resultKeys: Object.keys(result),
+        listingAfterProcessing: listing,
+        hasListingId: listing && 'id' in listing,
+        listingId: listing?.id
+      });
+      
       if (listing && listing.id) {
-        console.log('Fetched listing:', listing); // Debug log
+        console.log('✅ Frontend: Listing validation passed, setting state');
         setListing(listing);
+        console.log('✅ Frontend: State set with listing:', listing.id);
       } else {
-        console.error('Invalid listing data:', result);
-        toast.error('Invalid listing data');
-        router.push('/listings');
+        console.error('❌ Frontend: Listing validation failed:', {
+          listing: listing,
+          hasListing: !!listing,
+          hasId: listing && 'id' in listing,
+          listingId: listing?.id
+        });
+        toast.error('Invalid listing data received');
+        router.push('/browse');
       }
     } catch (error) {
       console.error('Error fetching listing:', error);
       toast.error('Failed to load listing');
-      router.push('/listings');
+      router.push('/browse');
     } finally {
       setLoading(false);
     }
@@ -103,9 +149,27 @@ export default function ListingDetailsPage() {
 
   useEffect(() => {
     if (params.id) {
+      console.log(`🔍 Frontend: Mounting listing page for ID: ${params.id}`);
+      
+      // Validate listing ID format (basic check)
+      if (typeof params.id !== 'string' || params.id.length < 5) {
+        console.error('❌ Frontend: Invalid listing ID format:', params.id);
+        toast.error('Invalid listing URL');
+        router.push('/browse');
+        return;
+      }
+      
       fetchListing();
+    } else {
+      console.error('❌ Frontend: No listing ID provided');
+      router.push('/browse');
     }
-  }, [fetchListing, params.id]);
+  }, [fetchListing, params.id, router]);
+
+  // Add a debug effect to log when the component state changes
+  useEffect(() => {
+    console.log(`📊 Frontend: Component state - loading: ${loading}, listing: ${listing ? listing.id : 'null'}`);
+  }, [loading, listing]);
 
   const formatPrice = (priceInCents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -153,14 +217,31 @@ export default function ListingDetailsPage() {
   if (!listing) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
+        <div className="text-center py-12">
+          <div className="mb-8">
+            <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+              <Ticket className="h-8 w-8 text-gray-400" />
+            </div>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Listing not found</h1>
-          <Link
-            href="/listings"
-            className="text-blue-600 hover:text-blue-500"
-          >
-            ← Back to listings
-          </Link>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            This listing may have been removed, sold, or the link might be incorrect.
+          </p>
+          <div className="space-y-3">
+            <Link href="/browse">
+              <Button className="bg-purple-700 hover:bg-purple-800">
+                Browse Available Tickets
+              </Button>
+            </Link>
+            <div>
+              <Link
+                href="/browse"
+                className="text-purple-600 hover:text-purple-500 text-sm"
+              >
+                ← Back to browse
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -170,8 +251,34 @@ export default function ListingDetailsPage() {
   const isOwner = user?.id === seller?.id;
   const canMakeOffer = user && !isOwner;
 
+  console.log('🎯 Frontend: About to render listing page with:', {
+    listingId: listing.id,
+    listingTitle: listing.title,
+    seller: seller,
+    isOwner,
+    canMakeOffer,
+    userIsAuthenticated: !!user
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {isDebugMode && debugInfo && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="text-sm">
+            <h3 className="font-medium text-red-800 mb-2">Debug Information</h3>
+            <div className="space-y-1 text-red-700">
+              <p><strong>URL:</strong> {debugInfo.url}</p>
+              <p><strong>Status:</strong> {debugInfo.status}</p>
+              <p><strong>Params ID:</strong> {debugInfo.params?.id}</p>
+              <p><strong>User ID:</strong> {user?.id || 'Not authenticated'}</p>
+              <p><strong>Response:</strong></p>
+              <pre className="text-xs bg-red-100 p-2 rounded mt-1 overflow-x-auto">
+                {JSON.stringify(debugInfo.response, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
