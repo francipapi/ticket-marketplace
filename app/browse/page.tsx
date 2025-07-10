@@ -520,7 +520,7 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
               Clear Filters
             </Button>
           )}
-          <Link href="/listings/create">
+          <Link href="/listings/create-ocr">
             <Button>List Your Tickets</Button>
           </Link>
         </div>

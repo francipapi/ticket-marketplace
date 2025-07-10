@@ -380,7 +380,7 @@ function EmptyEventsState({ hasSearch, timeFilter }: { hasSearch: boolean; timeF
           <Link href="/browse">
             <Button variant="outline">Browse All Tickets</Button>
           </Link>
-          <Link href="/listings/create">
+          <Link href="/listings/create-ocr">
             <Button>List Your Tickets</Button>
           </Link>
         </div>

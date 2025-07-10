@@ -1,10 +1,75 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Ticket, Shield, Upload, CreditCard, Users, Star, ArrowRight, Camera, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+
+interface PopularEvent {
+  eventName: string;
+  count: number;
+  averagePrice: number;
+  lowestPrice: number;
+  listingCount: number;
+  sampleListing?: {
+    eventDate: string;
+    venue?: string;
+  } | null;
+}
 
 export default function Home() {
+  const [popularEvents, setPopularEvents] = useState<PopularEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [totalTickets, setTotalTickets] = useState(127); // Default fallback
+
+  useEffect(() => {
+    fetchPopularEvents();
+    fetchTotalTickets();
+  }, []);
+
+  const fetchPopularEvents = async () => {
+    try {
+      const response = await fetch('/api/listings/popular-events');
+      if (response.ok) {
+        const data = await response.json();
+        setPopularEvents(data.slice(0, 3)); // Show only top 3 events
+      } else {
+        console.error('Failed to fetch popular events');
+      }
+    } catch (error) {
+      console.error('Error fetching popular events:', error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const fetchTotalTickets = async () => {
+    try {
+      const response = await fetch('/api/listings?status=ACTIVE');
+      if (response.ok) {
+        const data = await response.json();
+        const activeListings = data.data || [];
+        const total = activeListings.reduce((sum: number, listing: any) => sum + (listing.quantity || 0), 0);
+        setTotalTickets(total);
+      }
+    } catch (error) {
+      console.error('Error fetching total tickets:', error);
+      // Keep default value on error
+    }
+  };
+
+  const getEventGradient = (index: number) => {
+    const gradients = [
+      'bg-gradient-to-r from-purple-500 to-pink-500',
+      'bg-gradient-to-r from-blue-500 to-cyan-500', 
+      'bg-gradient-to-r from-green-500 to-emerald-500'
+    ];
+    return gradients[index % gradients.length];
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -15,7 +80,7 @@ export default function Home() {
             {/* Live Stats Badge */}
             <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-8">
               <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-              <span className="text-sm font-medium">127 tickets available now</span>
+              <span className="text-sm font-medium">{totalTickets} tickets available now</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
@@ -35,7 +100,7 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/listings/create">
+              <Link href="/listings/create-ocr">
                 <Button size="xl" variant="outline" className="border-white text-white hover:bg-white hover:text-purple-700 font-semibold">
                   <Upload className="mr-2 h-5 w-5" />
                   Sell Your Tickets
@@ -150,7 +215,7 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center group">
-              <div className="bg-gradient-to-r from-purple-700 to-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-r from-purple-700 to-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:shadow-lg transition-shadow duration-200">
                 1
               </div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">List Your Tickets</h3>
@@ -160,7 +225,7 @@ export default function Home() {
             </div>
 
             <div className="text-center group">
-              <div className="bg-gradient-to-r from-gold-600 to-gold-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-r from-gold-600 to-gold-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:shadow-lg transition-shadow duration-200">
                 2
               </div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">Get Offers</h3>
@@ -170,7 +235,7 @@ export default function Home() {
             </div>
 
             <div className="text-center group">
-              <div className="bg-gradient-to-r from-green-600 to-green-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:scale-110 transition-transform">
+              <div className="bg-gradient-to-r from-green-600 to-green-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold group-hover:shadow-lg transition-shadow duration-200">
                 3
               </div>
               <h3 className="text-xl font-semibold mb-3 text-gray-900">Get Paid Instantly</h3>
@@ -201,42 +266,61 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Mock popular events */}
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-32 bg-gradient-to-r from-purple-500 to-pink-500"></div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-1">Warwick Summer Ball</h3>
-                <p className="text-gray-600 text-sm mb-2">Fri, Jun 14 • Warwick Arts Centre</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-700 font-semibold">from £45</span>
-                  <Badge variant="secondary">12 available</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-32 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-1">Pop! vs. Copper</h3>
-                <p className="text-gray-600 text-sm mb-2">Sat, Feb 24 • Club Copper</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-700 font-semibold">from £8</span>
-                  <Badge variant="secondary">27 available</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-32 bg-gradient-to-r from-green-500 to-emerald-500"></div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-1">RAG Week Events</h3>
-                <p className="text-gray-600 text-sm mb-2">Various dates • Multiple venues</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-700 font-semibold">from £5</span>
-                  <Badge variant="secondary">43 available</Badge>
-                </div>
-              </CardContent>
-            </Card>
+            {loadingEvents ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden">
+                  <div className="h-32 bg-gray-200 animate-pulse"></div>
+                  <CardContent className="p-4">
+                    <div className="h-6 bg-gray-200 animate-pulse rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 animate-pulse rounded mb-2"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="h-5 bg-gray-200 animate-pulse rounded w-20"></div>
+                      <div className="h-6 bg-gray-200 animate-pulse rounded w-16"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : popularEvents.length > 0 ? (
+              // Real events
+              popularEvents.map((event, index) => {
+                const eventDate = event.sampleListing?.eventDate ? new Date(event.sampleListing.eventDate) : null;
+                const venue = event.sampleListing?.venue || 'Multiple venues';
+                
+                return (
+                  <Link key={event.eventName} href={`/browse?search=${encodeURIComponent(event.eventName)}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                      <div className={`h-32 ${getEventGradient(index)}`}></div>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-lg mb-1">{event.eventName}</h3>
+                        <p className="text-gray-600 text-sm mb-2">
+                          {eventDate ? format(eventDate, 'EEE, MMM dd') : 'Various dates'} • {venue}
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-700 font-semibold">
+                            from £{(event.lowestPrice / 100).toFixed(2)}
+                          </span>
+                          <Badge variant="secondary">{event.count} available</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })
+            ) : (
+              // No events fallback
+              <div className="col-span-full text-center py-12">
+                <Ticket className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Events Yet</h3>
+                <p className="text-gray-600 mb-4">Be the first to list tickets for Warwick events!</p>
+                <Link href="/listings/create-ocr">
+                  <Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    List Your Tickets
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>

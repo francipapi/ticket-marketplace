@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UnifiedPurchaseDialog } from '@/components/offers/unified-purchase-dialog';
+import { ModernPurchaseDialog } from '@/components/offers/modern-purchase-dialog';
 import { format } from 'date-fns';
 
 interface Listing {
@@ -413,7 +413,7 @@ export default function ListingDetailsPage() {
                 {canMakeOffer ? (
                   <Button
                     size="lg"
-                    className="w-full bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-800 hover:to-purple-700 hover:scale-[1.02] transform transition-all duration-200"
+                    className="w-full bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-800 hover:to-purple-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
                     onClick={() => setShowPurchaseDialog(true)}
                   >
                     <CreditCard className="mr-2 h-5 w-5" />
@@ -479,8 +479,8 @@ export default function ListingDetailsPage() {
           </div>
         </div>
 
-        {/* Unified Purchase Modal */}
-        <UnifiedPurchaseDialog
+        {/* Modern Purchase Modal */}
+        <ModernPurchaseDialog
           listing={{
             id: listing.id,
             title: listing.title,

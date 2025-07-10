@@ -112,8 +112,19 @@ export default function AirtableDashboard() {
           listingInfo: offer.listing, // ✅ Fixed: API returns listing, not listingInfo
         }));
         
+        // Remove duplicates based on offer ID to prevent React key conflicts
+        const uniqueSentOffers = transformedSentOffers.filter((offer, index, self) => 
+          index === self.findIndex(o => o.id === offer.id)
+        );
+        
         console.log('Transformed sent offers:', transformedSentOffers);
-        setSentOffers(transformedSentOffers);
+        console.log('Unique sent offers after deduplication:', uniqueSentOffers);
+        
+        // Log if duplicates were found
+        if (transformedSentOffers.length !== uniqueSentOffers.length) {
+          console.warn(`⚠️  Found ${transformedSentOffers.length - uniqueSentOffers.length} duplicate sent offers that were removed`);
+        }
+        setSentOffers(uniqueSentOffers);
       } else {
         const errorData = await sentRes.json();
         console.error('Sent offers error:', sentRes.status, errorData);
@@ -146,8 +157,19 @@ export default function AirtableDashboard() {
           listingInfo: offer.listing, // ✅ Fixed: API returns listing, not listingInfo
         }));
         
+        // Remove duplicates based on offer ID to prevent React key conflicts
+        const uniqueReceivedOffers = transformedReceivedOffers.filter((offer, index, self) => 
+          index === self.findIndex(o => o.id === offer.id)
+        );
+        
         console.log('Transformed received offers:', transformedReceivedOffers);
-        setReceivedOffers(transformedReceivedOffers);
+        console.log('Unique received offers after deduplication:', uniqueReceivedOffers);
+        
+        // Log if duplicates were found
+        if (transformedReceivedOffers.length !== uniqueReceivedOffers.length) {
+          console.warn(`⚠️  Found ${transformedReceivedOffers.length - uniqueReceivedOffers.length} duplicate received offers that were removed`);
+        }
+        setReceivedOffers(uniqueReceivedOffers);
       } else {
         const errorData = await receivedRes.json();
         console.error('Received offers error:', receivedRes.status, errorData);
@@ -262,7 +284,7 @@ export default function AirtableDashboard() {
             <Package className="h-10 w-10 text-blue-600 mr-4" />
             <div>
               <p className="text-sm text-gray-900">Active Listings</p>
-              <p className="text-2xl font-bold">{listings.filter(l => l.status === 'ACTIVE').length}</p>
+              <p className="text-2xl font-bold text-gray-900">{listings.filter(l => l.status === 'ACTIVE').length}</p>
             </div>
           </div>
         </div>
@@ -272,7 +294,7 @@ export default function AirtableDashboard() {
             <Tag className="h-10 w-10 text-green-600 mr-4" />
             <div>
               <p className="text-sm text-gray-900">Offers Received</p>
-              <p className="text-2xl font-bold">{receivedOffers.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{receivedOffers.length}</p>
             </div>
           </div>
         </div>
@@ -282,7 +304,7 @@ export default function AirtableDashboard() {
             <ShoppingBag className="h-10 w-10 text-purple-600 mr-4" />
             <div>
               <p className="text-sm text-gray-900">Offers Sent</p>
-              <p className="text-2xl font-bold">{sentOffers.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{sentOffers.length}</p>
             </div>
           </div>
         </div>

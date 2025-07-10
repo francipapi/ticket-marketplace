@@ -16,7 +16,7 @@ export function Navbar() {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 group">
-              <div className="bg-gradient-to-r from-purple-700 to-gold-500 p-2 rounded-lg group-hover:scale-105 transition-transform">
+              <div className="bg-gradient-to-r from-purple-700 to-gold-500 p-2 rounded-lg group-hover:shadow-lg transition-shadow duration-200">
                 <Ticket className="h-6 w-6 text-white" />
               </div>
               <div className="hidden sm:block">
